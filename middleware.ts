@@ -1,5 +1,8 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import type { Database } from "@/types/supabase";
+
+type UserRole = Database["public"]["Enums"]["user_role"];
 
 const PUBLIC_ROUTES = ["/", "/features", "/pricing", "/about", "/contact"];
 const AUTH_ROUTES = ["/login", "/signup", "/onboarding"];
@@ -9,7 +12,7 @@ export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
   const { pathname } = request.nextUrl;
 
-  const supabase = createServerClient(
+  const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -53,7 +56,8 @@ export async function middleware(request: NextRequest) {
       .from("profiles")
       .select("role")
       .eq("id", user.id)
-      .single<{ role: string }>();
+      .returns<{ role: UserRole | null }[]>()
+      .single();
 
     if (!profile || profile.role !== "super_admin") {
       return NextResponse.redirect(new URL("/dashboard", request.url));

@@ -1,6 +1,9 @@
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import type { Database } from "@/types/supabase";
+
+type UserRole = Database["public"]["Enums"]["user_role"];
 
 export default async function AdminLayout({
   children,
@@ -18,7 +21,8 @@ export default async function AdminLayout({
     .from("profiles")
     .select("role")
     .eq("id", user.id)
-    .single<{ role: string }>();
+    .returns<{ role: UserRole | null }[]>()
+    .single();
 
   if (!profile || profile.role !== "super_admin") redirect("/dashboard");
 

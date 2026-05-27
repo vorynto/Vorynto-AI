@@ -1,5 +1,5 @@
 -- ============================================================
--- Vorynto AI - Multi-Tenant Database Schema
+-- Vorynto AI - Multi-Tenant Database Schema (Idempotent)
 -- ============================================================
 
 -- Enable required extensions
@@ -7,21 +7,44 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ============================================================
--- ENUMS
+-- ENUMS (safe create)
 -- ============================================================
-CREATE TYPE user_role AS ENUM ('super_admin', 'tenant_admin', 'tenant_user');
-CREATE TYPE subscription_status AS ENUM ('active', 'trialing', 'past_due', 'canceled', 'paused', 'incomplete');
-CREATE TYPE campaign_type AS ENUM ('whatsapp', 'sms', 'email');
-CREATE TYPE campaign_status AS ENUM ('draft', 'scheduled', 'sending', 'sent', 'failed', 'paused');
-CREATE TYPE ticket_status AS ENUM ('open', 'in_progress', 'resolved', 'closed');
-CREATE TYPE ticket_priority AS ENUM ('low', 'medium', 'high', 'urgent');
-CREATE TYPE contact_status AS ENUM ('active', 'inactive', 'blocked');
-CREATE TYPE deal_stage AS ENUM ('lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost');
+DO $$ BEGIN
+  CREATE TYPE user_role AS ENUM ('super_admin', 'tenant_admin', 'tenant_user');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE subscription_status AS ENUM ('active', 'trialing', 'past_due', 'canceled', 'paused', 'incomplete');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE campaign_type AS ENUM ('whatsapp', 'sms', 'email');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE campaign_status AS ENUM ('draft', 'scheduled', 'sending', 'sent', 'failed', 'paused');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE ticket_status AS ENUM ('open', 'in_progress', 'resolved', 'closed');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE ticket_priority AS ENUM ('low', 'medium', 'high', 'urgent');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE contact_status AS ENUM ('active', 'inactive', 'blocked');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE deal_stage AS ENUM ('lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ============================================================
--- TENANTS (Companies / Customer Accounts)
+-- TENANTS
 -- ============================================================
-CREATE TABLE tenants (
+CREATE TABLE IF NOT EXISTS tenants (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name VARCHAR(255) NOT NULL,
   slug VARCHAR(100) UNIQUE NOT NULL,
@@ -44,7 +67,7 @@ CREATE TABLE tenants (
 -- ============================================================
 -- PROFILES (extends Supabase auth.users)
 -- ============================================================
-CREATE TABLE profiles (
+CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   tenant_id UUID REFERENCES tenants(id) ON DELETE SET NULL,
   role user_role DEFAULT 'tenant_user',
@@ -61,7 +84,7 @@ CREATE TABLE profiles (
 -- ============================================================
 -- SUBSCRIPTION PLANS
 -- ============================================================
-CREATE TABLE subscription_plans (
+CREATE TABLE IF NOT EXISTS subscription_plans (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name VARCHAR(100) NOT NULL,
   slug VARCHAR(100) UNIQUE NOT NULL,
@@ -83,7 +106,7 @@ CREATE TABLE subscription_plans (
 -- ============================================================
 -- SUBSCRIPTIONS
 -- ============================================================
-CREATE TABLE subscriptions (
+CREATE TABLE IF NOT EXISTS subscriptions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   plan_id UUID NOT NULL REFERENCES subscription_plans(id),
@@ -101,9 +124,9 @@ CREATE TABLE subscriptions (
 );
 
 -- ============================================================
--- TENANT FEATURES (which features each tenant can access)
+-- TENANT FEATURES
 -- ============================================================
-CREATE TABLE tenant_features (
+CREATE TABLE IF NOT EXISTS tenant_features (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   feature_key VARCHAR(100) NOT NULL,
@@ -116,9 +139,9 @@ CREATE TABLE tenant_features (
 );
 
 -- ============================================================
--- TENANT API KEYS (third-party integrations)
+-- TENANT API KEYS
 -- ============================================================
-CREATE TABLE tenant_api_keys (
+CREATE TABLE IF NOT EXISTS tenant_api_keys (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   provider VARCHAR(100) NOT NULL,
@@ -133,9 +156,9 @@ CREATE TABLE tenant_api_keys (
 );
 
 -- ============================================================
--- USER PERMISSIONS (function-level access control)
+-- USER PERMISSIONS
 -- ============================================================
-CREATE TABLE user_permissions (
+CREATE TABLE IF NOT EXISTS user_permissions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
@@ -149,7 +172,7 @@ CREATE TABLE user_permissions (
 -- ============================================================
 -- CRM - CONTACTS
 -- ============================================================
-CREATE TABLE crm_contacts (
+CREATE TABLE IF NOT EXISTS crm_contacts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   first_name VARCHAR(100),
@@ -172,9 +195,9 @@ CREATE TABLE crm_contacts (
 );
 
 -- ============================================================
--- CRM - DEALS / PIPELINE
+-- CRM - DEALS
 -- ============================================================
-CREATE TABLE crm_deals (
+CREATE TABLE IF NOT EXISTS crm_deals (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   contact_id UUID REFERENCES crm_contacts(id) ON DELETE SET NULL,
@@ -191,9 +214,9 @@ CREATE TABLE crm_deals (
 );
 
 -- ============================================================
--- CRM - ACTIVITIES / NOTES
+-- CRM - ACTIVITIES
 -- ============================================================
-CREATE TABLE crm_activities (
+CREATE TABLE IF NOT EXISTS crm_activities (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   contact_id UUID REFERENCES crm_contacts(id) ON DELETE CASCADE,
@@ -210,7 +233,7 @@ CREATE TABLE crm_activities (
 -- ============================================================
 -- WHATSAPP CONFIGURATION
 -- ============================================================
-CREATE TABLE whatsapp_configs (
+CREATE TABLE IF NOT EXISTS whatsapp_configs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID UNIQUE NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   phone_number_id VARCHAR(100),
@@ -228,7 +251,7 @@ CREATE TABLE whatsapp_configs (
 -- ============================================================
 -- WHATSAPP CONVERSATIONS
 -- ============================================================
-CREATE TABLE whatsapp_conversations (
+CREATE TABLE IF NOT EXISTS whatsapp_conversations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   contact_id UUID REFERENCES crm_contacts(id) ON DELETE SET NULL,
@@ -241,13 +264,14 @@ CREATE TABLE whatsapp_conversations (
   is_resolved BOOLEAN DEFAULT false,
   unread_count INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(tenant_id, wa_contact_id)
 );
 
 -- ============================================================
 -- WHATSAPP MESSAGES
 -- ============================================================
-CREATE TABLE whatsapp_messages (
+CREATE TABLE IF NOT EXISTS whatsapp_messages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   conversation_id UUID NOT NULL REFERENCES whatsapp_conversations(id) ON DELETE CASCADE,
@@ -266,7 +290,7 @@ CREATE TABLE whatsapp_messages (
 -- ============================================================
 -- CHATBOT CONFIGURATIONS
 -- ============================================================
-CREATE TABLE chatbot_configs (
+CREATE TABLE IF NOT EXISTS chatbot_configs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
@@ -287,7 +311,7 @@ CREATE TABLE chatbot_configs (
 -- ============================================================
 -- CAMPAIGNS
 -- ============================================================
-CREATE TABLE campaigns (
+CREATE TABLE IF NOT EXISTS campaigns (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
@@ -313,7 +337,7 @@ CREATE TABLE campaigns (
 -- ============================================================
 -- CAMPAIGN TEMPLATES
 -- ============================================================
-CREATE TABLE campaign_templates (
+CREATE TABLE IF NOT EXISTS campaign_templates (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
@@ -329,7 +353,7 @@ CREATE TABLE campaign_templates (
 -- ============================================================
 -- VOICE BOT CONFIGURATIONS
 -- ============================================================
-CREATE TABLE voice_bot_configs (
+CREATE TABLE IF NOT EXISTS voice_bot_configs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
@@ -347,7 +371,7 @@ CREATE TABLE voice_bot_configs (
 -- ============================================================
 -- META ADS INTEGRATION
 -- ============================================================
-CREATE TABLE meta_ads_configs (
+CREATE TABLE IF NOT EXISTS meta_ads_configs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID UNIQUE NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   access_token TEXT,
@@ -364,7 +388,7 @@ CREATE TABLE meta_ads_configs (
 -- ============================================================
 -- SEO PROJECTS
 -- ============================================================
-CREATE TABLE seo_projects (
+CREATE TABLE IF NOT EXISTS seo_projects (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   website_url VARCHAR(500) NOT NULL,
@@ -381,7 +405,7 @@ CREATE TABLE seo_projects (
 -- ============================================================
 -- WEBSITE BUILDER PROJECTS
 -- ============================================================
-CREATE TABLE website_builder_projects (
+CREATE TABLE IF NOT EXISTS website_builder_projects (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
@@ -398,7 +422,7 @@ CREATE TABLE website_builder_projects (
 -- ============================================================
 -- SUPPORT TICKETS
 -- ============================================================
-CREATE TABLE support_tickets (
+CREATE TABLE IF NOT EXISTS support_tickets (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   created_by UUID REFERENCES profiles(id),
@@ -414,9 +438,9 @@ CREATE TABLE support_tickets (
 );
 
 -- ============================================================
--- CMS PAGE CONTENT (managed by super admin)
+-- CMS PAGES
 -- ============================================================
-CREATE TABLE cms_pages (
+CREATE TABLE IF NOT EXISTS cms_pages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   slug VARCHAR(200) UNIQUE NOT NULL,
   title VARCHAR(255) NOT NULL,
@@ -433,7 +457,7 @@ CREATE TABLE cms_pages (
 -- ============================================================
 -- AUDIT LOGS
 -- ============================================================
-CREATE TABLE audit_logs (
+CREATE TABLE IF NOT EXISTS audit_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID REFERENCES tenants(id) ON DELETE SET NULL,
   user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
@@ -448,22 +472,22 @@ CREATE TABLE audit_logs (
 );
 
 -- ============================================================
--- INDEXES
+-- INDEXES (IF NOT EXISTS)
 -- ============================================================
-CREATE INDEX idx_profiles_tenant ON profiles(tenant_id);
-CREATE INDEX idx_profiles_role ON profiles(role);
-CREATE INDEX idx_subscriptions_tenant ON subscriptions(tenant_id);
-CREATE INDEX idx_subscriptions_status ON subscriptions(status);
-CREATE INDEX idx_tenant_features_tenant ON tenant_features(tenant_id);
-CREATE INDEX idx_crm_contacts_tenant ON crm_contacts(tenant_id);
-CREATE INDEX idx_crm_contacts_email ON crm_contacts(email);
-CREATE INDEX idx_crm_contacts_phone ON crm_contacts(phone);
-CREATE INDEX idx_crm_deals_tenant ON crm_deals(tenant_id);
-CREATE INDEX idx_whatsapp_convs_tenant ON whatsapp_conversations(tenant_id);
-CREATE INDEX idx_whatsapp_msgs_conversation ON whatsapp_messages(conversation_id);
-CREATE INDEX idx_campaigns_tenant ON campaigns(tenant_id);
-CREATE INDEX idx_audit_logs_tenant ON audit_logs(tenant_id);
-CREATE INDEX idx_audit_logs_created ON audit_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_profiles_tenant ON profiles(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_tenant ON subscriptions(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_tenant_features_tenant ON tenant_features(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_crm_contacts_tenant ON crm_contacts(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_crm_contacts_email ON crm_contacts(email);
+CREATE INDEX IF NOT EXISTS idx_crm_contacts_phone ON crm_contacts(phone);
+CREATE INDEX IF NOT EXISTS idx_crm_deals_tenant ON crm_deals(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_convs_tenant ON whatsapp_conversations(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_msgs_conversation ON whatsapp_messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_campaigns_tenant ON campaigns(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_tenant ON audit_logs(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at DESC);
 
 -- ============================================================
 -- ROW LEVEL SECURITY
@@ -489,91 +513,131 @@ ALTER TABLE seo_projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE website_builder_projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
 
--- Helper function: get user's tenant_id
+-- ============================================================
+-- HELPER FUNCTIONS
+-- ============================================================
 CREATE OR REPLACE FUNCTION get_user_tenant_id()
 RETURNS UUID AS $$
   SELECT tenant_id FROM profiles WHERE id = auth.uid();
 $$ LANGUAGE SQL STABLE SECURITY DEFINER;
 
--- Helper function: check if user is super admin
 CREATE OR REPLACE FUNCTION is_super_admin()
 RETURNS BOOLEAN AS $$
   SELECT EXISTS(SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'super_admin');
 $$ LANGUAGE SQL STABLE SECURITY DEFINER;
 
--- Helper function: check if user is tenant admin
 CREATE OR REPLACE FUNCTION is_tenant_admin()
 RETURNS BOOLEAN AS $$
   SELECT EXISTS(SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('super_admin', 'tenant_admin'));
 $$ LANGUAGE SQL STABLE SECURITY DEFINER;
 
--- RLS Policies: Tenants
+-- ============================================================
+-- RLS POLICIES (drop + recreate to ensure idempotency)
+-- ============================================================
+-- Tenants
+DROP POLICY IF EXISTS "super_admin_all_tenants" ON tenants;
+DROP POLICY IF EXISTS "tenant_users_own_tenant" ON tenants;
 CREATE POLICY "super_admin_all_tenants" ON tenants FOR ALL USING (is_super_admin());
 CREATE POLICY "tenant_users_own_tenant" ON tenants FOR SELECT USING (id = get_user_tenant_id());
 
--- RLS Policies: Profiles
+-- Profiles
+DROP POLICY IF EXISTS "super_admin_all_profiles" ON profiles;
+DROP POLICY IF EXISTS "tenant_users_own_profile" ON profiles;
+DROP POLICY IF EXISTS "users_update_own_profile" ON profiles;
 CREATE POLICY "super_admin_all_profiles" ON profiles FOR ALL USING (is_super_admin());
 CREATE POLICY "tenant_users_own_profile" ON profiles FOR SELECT USING (tenant_id = get_user_tenant_id());
 CREATE POLICY "users_update_own_profile" ON profiles FOR UPDATE USING (id = auth.uid());
 
--- RLS Policies: Subscriptions
+-- Subscriptions
+DROP POLICY IF EXISTS "super_admin_all_subs" ON subscriptions;
+DROP POLICY IF EXISTS "tenant_own_sub" ON subscriptions;
 CREATE POLICY "super_admin_all_subs" ON subscriptions FOR ALL USING (is_super_admin());
 CREATE POLICY "tenant_own_sub" ON subscriptions FOR SELECT USING (tenant_id = get_user_tenant_id());
 
--- RLS Policies: Tenant Features
+-- Tenant Features
+DROP POLICY IF EXISTS "super_admin_all_features" ON tenant_features;
+DROP POLICY IF EXISTS "tenant_own_features" ON tenant_features;
 CREATE POLICY "super_admin_all_features" ON tenant_features FOR ALL USING (is_super_admin());
 CREATE POLICY "tenant_own_features" ON tenant_features FOR SELECT USING (tenant_id = get_user_tenant_id());
 
--- RLS Policies: Tenant API Keys
+-- Tenant API Keys
+DROP POLICY IF EXISTS "super_admin_all_keys" ON tenant_api_keys;
+DROP POLICY IF EXISTS "tenant_admin_own_keys" ON tenant_api_keys;
 CREATE POLICY "super_admin_all_keys" ON tenant_api_keys FOR ALL USING (is_super_admin());
 CREATE POLICY "tenant_admin_own_keys" ON tenant_api_keys FOR ALL USING (tenant_id = get_user_tenant_id() AND is_tenant_admin());
 
--- RLS Policies: CRM Contacts
+-- CRM Contacts
+DROP POLICY IF EXISTS "super_admin_all_contacts" ON crm_contacts;
+DROP POLICY IF EXISTS "tenant_own_contacts" ON crm_contacts;
 CREATE POLICY "super_admin_all_contacts" ON crm_contacts FOR ALL USING (is_super_admin());
 CREATE POLICY "tenant_own_contacts" ON crm_contacts FOR ALL USING (tenant_id = get_user_tenant_id());
 
--- RLS Policies: CRM Deals
+-- CRM Deals
+DROP POLICY IF EXISTS "super_admin_all_deals" ON crm_deals;
+DROP POLICY IF EXISTS "tenant_own_deals" ON crm_deals;
 CREATE POLICY "super_admin_all_deals" ON crm_deals FOR ALL USING (is_super_admin());
 CREATE POLICY "tenant_own_deals" ON crm_deals FOR ALL USING (tenant_id = get_user_tenant_id());
 
--- RLS Policies: WhatsApp
+-- WhatsApp
+DROP POLICY IF EXISTS "super_admin_all_wa" ON whatsapp_configs;
+DROP POLICY IF EXISTS "tenant_own_wa" ON whatsapp_configs;
 CREATE POLICY "super_admin_all_wa" ON whatsapp_configs FOR ALL USING (is_super_admin());
 CREATE POLICY "tenant_own_wa" ON whatsapp_configs FOR ALL USING (tenant_id = get_user_tenant_id() AND is_tenant_admin());
+
+DROP POLICY IF EXISTS "super_admin_all_wa_convs" ON whatsapp_conversations;
+DROP POLICY IF EXISTS "tenant_own_wa_convs" ON whatsapp_conversations;
 CREATE POLICY "super_admin_all_wa_convs" ON whatsapp_conversations FOR ALL USING (is_super_admin());
 CREATE POLICY "tenant_own_wa_convs" ON whatsapp_conversations FOR ALL USING (tenant_id = get_user_tenant_id());
+
+DROP POLICY IF EXISTS "super_admin_all_wa_msgs" ON whatsapp_messages;
+DROP POLICY IF EXISTS "tenant_own_wa_msgs" ON whatsapp_messages;
 CREATE POLICY "super_admin_all_wa_msgs" ON whatsapp_messages FOR ALL USING (is_super_admin());
 CREATE POLICY "tenant_own_wa_msgs" ON whatsapp_messages FOR ALL USING (tenant_id = get_user_tenant_id());
 
--- RLS Policies: Campaigns
+-- Campaigns
+DROP POLICY IF EXISTS "super_admin_all_campaigns" ON campaigns;
+DROP POLICY IF EXISTS "tenant_own_campaigns" ON campaigns;
 CREATE POLICY "super_admin_all_campaigns" ON campaigns FOR ALL USING (is_super_admin());
 CREATE POLICY "tenant_own_campaigns" ON campaigns FOR ALL USING (tenant_id = get_user_tenant_id());
 
--- RLS Policies: Chatbot
+-- Chatbot
+DROP POLICY IF EXISTS "super_admin_all_chatbot" ON chatbot_configs;
+DROP POLICY IF EXISTS "tenant_own_chatbot" ON chatbot_configs;
 CREATE POLICY "super_admin_all_chatbot" ON chatbot_configs FOR ALL USING (is_super_admin());
 CREATE POLICY "tenant_own_chatbot" ON chatbot_configs FOR ALL USING (tenant_id = get_user_tenant_id());
 
--- RLS Policies: Voice Bot
+-- Voice Bot
+DROP POLICY IF EXISTS "super_admin_all_voice" ON voice_bot_configs;
+DROP POLICY IF EXISTS "tenant_own_voice" ON voice_bot_configs;
 CREATE POLICY "super_admin_all_voice" ON voice_bot_configs FOR ALL USING (is_super_admin());
 CREATE POLICY "tenant_own_voice" ON voice_bot_configs FOR ALL USING (tenant_id = get_user_tenant_id());
 
--- RLS Policies: Meta Ads
+-- Meta Ads
+DROP POLICY IF EXISTS "super_admin_all_meta" ON meta_ads_configs;
+DROP POLICY IF EXISTS "tenant_own_meta" ON meta_ads_configs;
 CREATE POLICY "super_admin_all_meta" ON meta_ads_configs FOR ALL USING (is_super_admin());
 CREATE POLICY "tenant_own_meta" ON meta_ads_configs FOR ALL USING (tenant_id = get_user_tenant_id() AND is_tenant_admin());
 
--- RLS Policies: SEO
+-- SEO
+DROP POLICY IF EXISTS "super_admin_all_seo" ON seo_projects;
+DROP POLICY IF EXISTS "tenant_own_seo" ON seo_projects;
 CREATE POLICY "super_admin_all_seo" ON seo_projects FOR ALL USING (is_super_admin());
 CREATE POLICY "tenant_own_seo" ON seo_projects FOR ALL USING (tenant_id = get_user_tenant_id());
 
--- RLS Policies: Website Builder
+-- Website Builder
+DROP POLICY IF EXISTS "super_admin_all_wb" ON website_builder_projects;
+DROP POLICY IF EXISTS "tenant_own_wb" ON website_builder_projects;
 CREATE POLICY "super_admin_all_wb" ON website_builder_projects FOR ALL USING (is_super_admin());
 CREATE POLICY "tenant_own_wb" ON website_builder_projects FOR ALL USING (tenant_id = get_user_tenant_id());
 
--- RLS Policies: Support Tickets
+-- Support Tickets
+DROP POLICY IF EXISTS "super_admin_all_tickets" ON support_tickets;
+DROP POLICY IF EXISTS "tenant_own_tickets" ON support_tickets;
 CREATE POLICY "super_admin_all_tickets" ON support_tickets FOR ALL USING (is_super_admin());
 CREATE POLICY "tenant_own_tickets" ON support_tickets FOR ALL USING (tenant_id = get_user_tenant_id());
 
 -- ============================================================
--- TRIGGERS: updated_at automation
+-- TRIGGERS: updated_at
 -- ============================================================
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
@@ -583,13 +647,28 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS tenants_updated_at ON tenants;
 CREATE TRIGGER tenants_updated_at BEFORE UPDATE ON tenants FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS profiles_updated_at ON profiles;
 CREATE TRIGGER profiles_updated_at BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS subscriptions_updated_at ON subscriptions;
 CREATE TRIGGER subscriptions_updated_at BEFORE UPDATE ON subscriptions FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS crm_contacts_updated_at ON crm_contacts;
 CREATE TRIGGER crm_contacts_updated_at BEFORE UPDATE ON crm_contacts FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS crm_deals_updated_at ON crm_deals;
 CREATE TRIGGER crm_deals_updated_at BEFORE UPDATE ON crm_deals FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS campaigns_updated_at ON campaigns;
 CREATE TRIGGER campaigns_updated_at BEFORE UPDATE ON campaigns FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS chatbot_configs_updated_at ON chatbot_configs;
 CREATE TRIGGER chatbot_configs_updated_at BEFORE UPDATE ON chatbot_configs FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS whatsapp_configs_updated_at ON whatsapp_configs;
 CREATE TRIGGER whatsapp_configs_updated_at BEFORE UPDATE ON whatsapp_configs FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- ============================================================
@@ -604,17 +683,19 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
     COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
     COALESCE((NEW.raw_user_meta_data->>'role')::user_role, 'tenant_user')
-  );
+  )
+  ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
 -- ============================================================
--- SEED: Default Subscription Plans
+-- SEED: Default Subscription Plans (upsert)
 -- ============================================================
 INSERT INTO subscription_plans (name, slug, description, price_monthly, price_yearly, features, feature_limits, is_featured, sort_order) VALUES
 (
@@ -637,15 +718,31 @@ INSERT INTO subscription_plans (name, slug, description, price_monthly, price_ye
   'Enterprise', 'enterprise',
   'Unlimited AI power for large organizations with custom requirements',
   399.00, 3990.00,
-  '["Unlimited contacts", "All features included", "Unlimited campaigns", "Custom AI training", "Dedicated Voice Bot", "White-label option", "Custom integrations", "24/7 priority support", "Dedicated account manager"]',
+  '["Unlimited contacts", "All features included", "Unlimited campaigns", "Custom AI training", "White-label option", "24/7 priority support", "Dedicated account manager"]',
   '{"contacts": -1, "campaigns_per_month": -1, "chatbot_conversations": -1, "team_members": -1, "voice_minutes": -1}',
   false, 3
-);
+)
+ON CONFLICT (slug) DO UPDATE SET
+  price_monthly = EXCLUDED.price_monthly,
+  price_yearly = EXCLUDED.price_yearly,
+  features = EXCLUDED.features,
+  feature_limits = EXCLUDED.feature_limits,
+  is_featured = EXCLUDED.is_featured,
+  updated_at = NOW();
 
 -- ============================================================
--- SEED: CMS Pages
+-- SEED: CMS Pages (upsert)
 -- ============================================================
 INSERT INTO cms_pages (slug, title, meta_title, meta_description, content) VALUES
-('home', 'Home', 'Vorynto AI - Multi-Tenant AI Agent Platform', 'Transform your business with Vorynto AI. CRM, WhatsApp Bot, Bulk Campaigns, AI Website Builder, Voice Bot, Meta Ads and more.', '{"hero": {"title": "Transform Your Business with AI", "subtitle": "The all-in-one AI platform for modern businesses"}}'),
-('about', 'About Us', 'About Vorynto AI', 'Learn about the team behind Vorynto AI and our mission to democratize AI for businesses.', '{}'),
-('contact', 'Contact Us', 'Contact Vorynto AI', 'Get in touch with the Vorynto AI team. We are here to help you succeed.', '{}');
+('home', 'Home', 'Vorynto AI - Multi-Tenant AI Agent Platform',
+ 'Transform your business with Vorynto AI.',
+ '{"hero": {"title": "Transform Your Business with AI", "subtitle": "The all-in-one AI platform for modern businesses"}}'),
+('about', 'About Us', 'About Vorynto AI',
+ 'Learn about the team behind Vorynto AI.',
+ '{}'),
+('contact', 'Contact Us', 'Contact Vorynto AI',
+ 'Get in touch with the Vorynto AI team.',
+ '{}')
+ON CONFLICT (slug) DO UPDATE SET
+  title = EXCLUDED.title,
+  updated_at = NOW();
