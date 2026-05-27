@@ -1,4 +1,4 @@
-import Header from "@/components/dashboard/Header";
+import AdminHeader from "@/components/admin/AdminHeader";
 import { FileText, Edit3, Eye, Plus, Globe, Home, Info, Phone } from "lucide-react";
 
 const pages = [
@@ -13,11 +13,12 @@ const pages = [
 export default function AdminContentPage() {
   return (
     <div>
-      <Header
+      <AdminHeader
         title="CMS Content"
         subtitle="Manage marketing website pages and content"
+        breadcrumb="Platform Management"
         action={
-          <button className="btn-primary text-sm py-2 px-4">
+          <button className="btn-primary text-sm py-2 px-4 flex items-center gap-1.5">
             <Plus className="w-4 h-4" />
             New Page
           </button>

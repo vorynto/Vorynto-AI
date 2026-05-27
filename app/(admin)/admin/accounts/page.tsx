@@ -1,191 +1,157 @@
-import Header from "@/components/dashboard/Header";
-import { Building2, Key, Shield, Users, MessageSquare, BarChart3, ToggleRight, ToggleLeft, CheckCircle2, XCircle } from "lucide-react";
+import AdminHeader from "@/components/admin/AdminHeader";
+import { createAdminClient } from "@/lib/supabase/server";
+import {
+  Key, Shield, Users, CheckCircle2, XCircle,
+  Building2, ArrowRight, AlertCircle,
+} from "lucide-react";
+import Link from "next/link";
 
-// This page manages a specific tenant's account settings
-// In a real app, the [tenantId] would be a dynamic route
+// Quick-access overview of all tenants with their API keys and feature status.
+// For full tenant drill-down, navigate from /admin/tenants → Manage.
 
-const tenantInfo = {
-  name: "TechCorp Inc.",
-  email: "admin@techcorp.com",
-  plan: "Growth",
-  slug: "techcorp",
-  isActive: true,
-  isSetupComplete: true,
-  apiKeys: [
-    { provider: "WhatsApp Business API", key: "wbp_***********************abc123", isVerified: true, provider_icon: "💬" },
-    { provider: "Meta Ads", key: "EAABc***********************xyz", isVerified: false, provider_icon: "📘" },
-    { provider: "OpenAI", key: "sk-***********************proj", isVerified: true, provider_icon: "🤖" },
-  ],
-  features: [
-    { key: "crm", label: "AI CRM", isEnabled: true, usageLimit: 5000, usageCount: 2847 },
-    { key: "whatsapp", label: "WhatsApp Bot", isEnabled: true, usageLimit: null, usageCount: null },
-    { key: "campaigns", label: "Bulk Campaigns", isEnabled: true, usageLimit: 10000, usageCount: 6200 },
-    { key: "website_builder", label: "AI Website Builder", isEnabled: true, usageLimit: null, usageCount: null },
-    { key: "voice_bot", label: "Voice Bot", isEnabled: true, usageLimit: 100, usageCount: 78 },
-    { key: "meta_ads", label: "Meta Ads Integration", isEnabled: false, usageLimit: null, usageCount: null },
-    { key: "seo", label: "AI SEO", isEnabled: true, usageLimit: null, usageCount: null },
-    { key: "chatbot", label: "Website Chatbot", isEnabled: true, usageLimit: null, usageCount: null },
-  ],
-  users: [
-    { name: "Sarah Johnson", email: "sarah@techcorp.com", role: "tenant_admin" },
-    { name: "Mark Davis", email: "mark@techcorp.com", role: "tenant_user" },
-    { name: "Lisa Chen", email: "lisa@techcorp.com", role: "tenant_user" },
-  ],
-};
+export default async function AdminAccountsPage() {
+  const admin = await createAdminClient();
 
-export default function AdminAccountsPage() {
+  const { data: tenants } = await admin
+    .from("tenants")
+    .select(`
+      id, name, slug, email, is_active, is_setup_complete,
+      subscriptions(status, subscription_plans(name)),
+      tenant_api_keys(provider, key_name, is_active)
+    `)
+    .order("created_at", { ascending: false })
+    .returns<{
+      id: string;
+      name: string;
+      slug: string;
+      email: string | null;
+      is_active: boolean | null;
+      is_setup_complete: boolean | null;
+      subscriptions: { status: string | null; subscription_plans: { name: string } | null }[];
+      tenant_api_keys: { provider: string; key_name: string; is_active: boolean | null }[];
+    }[]>();
+
+  const list = tenants ?? [];
+
   return (
     <div>
-      <Header
-        title="Account Management"
-        subtitle={`Managing: ${tenantInfo.name}`}
-        action={
-          <button className="btn-primary text-sm py-2 px-4">
-            <Shield className="w-4 h-4" />
-            Login as Tenant
-          </button>
-        }
+      <AdminHeader
+        title="Account Overview"
+        subtitle="Platform-wide view of tenant API key setup and integration status"
+        breadcrumb="Platform Management"
       />
 
       <div className="p-6 space-y-6">
-        {/* Tenant info card */}
-        <div className="glass-card p-6 bg-gradient-to-br from-violet-600/10 to-transparent border-violet-500/20">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-violet-600/20 flex items-center justify-center text-2xl font-bold text-violet-400">
-                {tenantInfo.name[0]}
+        {/* Summary */}
+        <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+          {[
+            { label: "Total Accounts", value: list.length, icon: Building2, color: "text-violet-400", bg: "bg-violet-600/20" },
+            { label: "Keys Configured", value: list.filter((t) => t.tenant_api_keys.length > 0).length, icon: Key, color: "text-amber-400", bg: "bg-amber-600/20" },
+            { label: "Setup Incomplete", value: list.filter((t) => !t.is_setup_complete).length, icon: AlertCircle, color: "text-red-400", bg: "bg-red-600/20" },
+          ].map((s) => (
+            <div key={s.label} className="glass-card p-5">
+              <div className={`w-9 h-9 rounded-xl ${s.bg} flex items-center justify-center mb-3`}>
+                <s.icon className={`w-4 h-4 ${s.color}`} />
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">{tenantInfo.name}</h2>
-                <p className="text-sm text-white/40">{tenantInfo.email}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-xs px-2.5 py-1 rounded-full bg-violet-600/20 border border-violet-500/20 text-violet-400">
-                    {tenantInfo.plan} Plan
-                  </span>
-                  <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-600/20 border border-emerald-500/20 text-emerald-400">
-                    Active
-                  </span>
-                  {tenantInfo.isSetupComplete && (
-                    <span className="flex items-center gap-1 text-xs text-white/30">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                      Setup Complete
-                    </span>
-                  )}
-                </div>
-              </div>
+              <div className="text-2xl font-bold text-white">{s.value}</div>
+              <div className="text-xs text-white/40 mt-0.5">{s.label}</div>
             </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-white">$149</div>
-              <div className="text-xs text-white/30">per month</div>
-              <div className="text-xs text-white/20 mt-1">Renews Jun 26, 2025</div>
-            </div>
-          </div>
+          ))}
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {/* Feature access control */}
-          <div className="glass-card p-6">
-            <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-              <Shield className="w-4 h-4 text-violet-400" />
-              Feature Access Control
-            </h2>
-            <div className="space-y-3">
-              {tenantInfo.features.map((feature) => (
-                <div key={feature.key} className="flex items-center justify-between p-3 rounded-xl bg-white/3 border border-white/5">
-                  <div className="flex items-center gap-2">
-                    {feature.isEnabled ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-white/20" />
-                    )}
-                    <div>
-                      <div className="text-sm text-white">{feature.label}</div>
-                      {feature.usageLimit && feature.usageCount !== null && (
-                        <div className="text-xs text-white/30 mt-0.5">
-                          {feature.usageCount.toLocaleString()} / {feature.usageLimit.toLocaleString()} used
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {feature.isEnabled ? (
-                    <ToggleRight className="w-7 h-7 text-emerald-400 cursor-pointer hover:opacity-80" />
-                  ) : (
-                    <ToggleLeft className="w-7 h-7 text-white/20 cursor-pointer hover:text-white/40" />
-                  )}
-                </div>
-              ))}
-            </div>
+        {/* Accounts grid */}
+        {list.length === 0 ? (
+          <div className="glass-card p-10 text-center">
+            <Building2 className="w-10 h-10 text-white/10 mx-auto mb-3" />
+            <p className="text-sm text-white/30">No tenant accounts yet</p>
+            <Link href="/admin/tenants" className="mt-4 inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300">
+              Go to Tenants <ArrowRight className="w-3 h-3" />
+            </Link>
           </div>
+        ) : (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            {list.map((tenant, i) => {
+              const sub = tenant.subscriptions?.[0];
+              const planName = sub?.subscription_plans?.name ?? "No Plan";
+              const subStatus = sub?.status ?? null;
+              const isActive = tenant.is_active !== false;
+              const keys = tenant.tenant_api_keys ?? [];
+              const activeKeys = keys.filter((k) => k.is_active !== false);
+              const providers = [...new Set(activeKeys.map((k) => k.provider))];
 
-          <div className="space-y-6">
-            {/* API Keys */}
-            <div className="glass-card p-6">
-              <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-                <Key className="w-4 h-4 text-violet-400" />
-                API Keys & Integrations
-              </h2>
-              <div className="space-y-3">
-                {tenantInfo.apiKeys.map((key) => (
-                  <div key={key.provider} className="p-3 rounded-xl bg-white/3 border border-white/5">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span>{key.provider_icon}</span>
-                        <span className="text-sm font-medium text-white">{key.provider}</span>
-                      </div>
-                      {key.isVerified ? (
-                        <span className="flex items-center gap-1 text-xs text-emerald-400">
-                          <CheckCircle2 className="w-3 h-3" />
-                          Verified
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-xs text-amber-400">
-                          <XCircle className="w-3 h-3" />
-                          Not verified
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <code className="text-xs text-white/30 font-mono flex-1 truncate">{key.key}</code>
-                      <button className="text-xs text-violet-400 hover:text-violet-300">Update</button>
-                    </div>
-                  </div>
-                ))}
-                <button className="w-full py-2 text-xs border border-dashed border-white/10 text-white/30 rounded-xl hover:border-violet-500/30 hover:text-violet-400 transition-all">
-                  + Add API Key
-                </button>
-              </div>
-            </div>
+              const avatarColors = [
+                "bg-violet-600/20 text-violet-400", "bg-cyan-600/20 text-cyan-400",
+                "bg-emerald-600/20 text-emerald-400", "bg-amber-600/20 text-amber-400",
+                "bg-pink-600/20 text-pink-400", "bg-indigo-600/20 text-indigo-400",
+              ];
 
-            {/* Tenant users */}
-            <div className="glass-card p-6">
-              <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-                <Users className="w-4 h-4 text-violet-400" />
-                Tenant Users
-              </h2>
-              <div className="space-y-2">
-                {tenantInfo.users.map((user) => (
-                  <div key={user.email} className="flex items-center justify-between p-3 rounded-xl bg-white/3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-lg bg-violet-600/20 flex items-center justify-center text-xs font-bold text-violet-400">
-                        {user.name[0]}
+              const providerIcons: Record<string, string> = {
+                openai: "🤖", whatsapp: "💬", twilio: "📞", smtp: "📧", meta: "📘",
+              };
+
+              return (
+                <div key={tenant.id} className="glass-card p-5">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl ${avatarColors[i % avatarColors.length]} flex items-center justify-center text-lg font-bold shrink-0`}>
+                        {tenant.name[0]}
                       </div>
                       <div>
-                        <div className="text-sm text-white">{user.name}</div>
-                        <div className="text-xs text-white/30">{user.email}</div>
+                        <div className="text-sm font-bold text-white">{tenant.name}</div>
+                        <div className="text-xs text-white/30">{tenant.email ?? tenant.slug}</div>
                       </div>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${user.role === "tenant_admin" ? "border-violet-500/20 bg-violet-500/10 text-violet-400" : "border-white/10 bg-white/5 text-white/30"}`}>
-                      {user.role === "tenant_admin" ? "Admin" : "User"}
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className={`px-2 py-0.5 rounded-full text-xs border ${isActive ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" : "text-white/30 bg-white/5 border-white/10"}`}>
+                        {isActive ? "Active" : "Inactive"}
+                      </span>
+                      <span className="text-[10px] text-violet-400 font-semibold">{planName}</span>
+                    </div>
                   </div>
-                ))}
-              </div>
-              <button className="w-full mt-3 py-2 text-xs border border-dashed border-white/10 text-white/30 rounded-xl hover:border-violet-500/30 hover:text-violet-400 transition-all">
-                + Invite User to Tenant
-              </button>
-            </div>
+
+                  {/* API Key providers */}
+                  <div className="mb-4">
+                    <div className="text-[10px] text-white/30 font-semibold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <Key className="w-3 h-3" />
+                      API Keys ({activeKeys.length} configured)
+                    </div>
+                    {providers.length === 0 ? (
+                      <div className="flex items-center gap-1.5 text-xs text-amber-400/70">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        No API keys configured
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {providers.map((p) => (
+                          <span key={p} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-xs text-white/60">
+                            {providerIcons[p] ?? "🔑"} {p}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Setup status */}
+                  <div className="flex items-center justify-between">
+                    <div className={`flex items-center gap-1.5 text-xs ${tenant.is_setup_complete ? "text-emerald-400" : "text-amber-400"}`}>
+                      {tenant.is_setup_complete ? (
+                        <><CheckCircle2 className="w-3.5 h-3.5" /> Setup Complete</>
+                      ) : (
+                        <><XCircle className="w-3.5 h-3.5" /> Setup Incomplete</>
+                      )}
+                    </div>
+                    <Link
+                      href={`/admin/tenants`}
+                      className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 transition-colors"
+                    >
+                      Manage <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

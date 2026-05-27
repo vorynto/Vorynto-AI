@@ -48,6 +48,17 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && isAuthRoute) {
+    // Super admins go to the admin panel; regular users go to the dashboard
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .returns<{ role: UserRole | null }[]>()
+      .maybeSingle();
+
+    if (profile?.role === "super_admin") {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
@@ -57,7 +68,7 @@ export async function middleware(request: NextRequest) {
       .select("role")
       .eq("id", user.id)
       .returns<{ role: UserRole | null }[]>()
-      .single();
+      .maybeSingle();
 
     if (!profile || profile.role !== "super_admin") {
       return NextResponse.redirect(new URL("/dashboard", request.url));
