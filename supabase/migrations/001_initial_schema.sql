@@ -677,14 +677,20 @@ CREATE TRIGGER whatsapp_configs_updated_at BEFORE UPDATE ON whatsapp_configs FOR
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO profiles (id, first_name, last_name, role)
-  VALUES (
-    NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
-    COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
-    COALESCE((NEW.raw_user_meta_data->>'role')::user_role, 'tenant_user')
-  )
-  ON CONFLICT (id) DO NOTHING;
+  -- Wrapped in exception handler so a profile insert failure never blocks
+  -- user creation (e.g. race conditions or unexpected constraint violations)
+  BEGIN
+    INSERT INTO profiles (id, first_name, last_name, role)
+    VALUES (
+      NEW.id,
+      COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
+      COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
+      COALESCE((NEW.raw_user_meta_data->>'role')::user_role, 'tenant_user'::user_role)
+    )
+    ON CONFLICT (id) DO NOTHING;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'handle_new_user: profile insert failed for user %: %', NEW.id, SQLERRM;
+  END;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
