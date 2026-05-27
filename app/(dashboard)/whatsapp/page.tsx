@@ -1,5 +1,8 @@
 import Header from "@/components/dashboard/Header";
 import StatsCard from "@/components/dashboard/StatsCard";
+import SetupRequired from "@/components/ui/SetupRequired";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentTenantId, hasRequiredKeys } from "@/lib/tenant-keys";
 import { MessageSquare, Bot, Users, CheckCheck, Send, Search, Plus, ToggleLeft, ToggleRight } from "lucide-react";
 
 const conversations = [
@@ -19,9 +22,23 @@ const messages = [
   { direction: "outbound", text: "Awesome! 🎉 You can sign up here: https://app.vorynto.ai/signup?plan=growth\n\nOr I can have one of our team members call you to help with the setup. Which would you prefer?", time: "10:26 AM", isAI: true },
 ];
 
-export default function WhatsAppPage() {
+export default async function WhatsAppPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const tenantId = user ? await getCurrentTenantId(user.id) : null;
+  const ready = tenantId
+    ? await hasRequiredKeys(tenantId, "whatsapp", ["access_token", "phone_number_id"])
+    : false;
   return (
     <div className="flex flex-col h-full">
+      {!ready && (
+        <SetupRequired
+          provider="whatsapp"
+          title="WhatsApp Business API not configured"
+          description="Add your WhatsApp credentials to start receiving and sending messages with the AI bot."
+          keys={["access_token", "phone_number_id", "waba_id", "verify_token"]}
+        />
+      )}
       <Header
         title="WhatsApp AI Bot"
         subtitle="AI-powered conversations with your customers"

@@ -1,10 +1,27 @@
 import Header from "@/components/dashboard/Header";
 import StatsCard from "@/components/dashboard/StatsCard";
+import SetupRequired from "@/components/ui/SetupRequired";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentTenantId, hasRequiredKeys } from "@/lib/tenant-keys";
 import { Shield, MessageSquare, Users, TrendingUp, Plus, Copy, CheckCircle2 } from "lucide-react";
 
-export default function ChatbotPage() {
+export default async function ChatbotPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const tenantId = user ? await getCurrentTenantId(user.id) : null;
+  const ready = tenantId
+    ? await hasRequiredKeys(tenantId, "openai", ["api_key"])
+    : false;
   return (
     <div>
+      {!ready && (
+        <SetupRequired
+          provider="openai"
+          title="OpenAI API key not configured"
+          description="Add your OpenAI API key to power the AI chatbot responses."
+          keys={["api_key"]}
+        />
+      )}
       <Header
         title="Website AI Chatbot"
         subtitle="Embed AI chatbot on any website"

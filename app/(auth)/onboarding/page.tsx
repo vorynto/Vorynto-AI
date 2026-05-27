@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Building2, Upload, Globe, Key, CheckCircle2, ArrowRight,
-  MessageSquare, BarChart3, ChevronRight, Zap,
+  MessageSquare, BarChart3, ChevronRight, Zap, Eye, EyeOff,
+  AlertCircle, ExternalLink,
 } from "lucide-react";
 
 const steps = [
@@ -24,12 +25,56 @@ export default function OnboardingPage() {
     phone: "",
     country: "",
     primaryColor: "#7c3aed",
-    connectWhatsApp: false,
-    connectMeta: false,
   });
+
+  const [apiKeys, setApiKeys] = useState({
+    openai_api_key: "",
+    wa_access_token: "",
+    wa_phone_number_id: "",
+    twilio_account_sid: "",
+    twilio_auth_token: "",
+    smtp_host: "",
+    smtp_user: "",
+    smtp_pass: "",
+  });
+
+  const [showKey, setShowKey] = useState<Record<string, boolean>>({});
+  const [savingKeys, setSavingKeys] = useState(false);
+
+  function toggleShow(field: string) {
+    setShowKey((prev) => ({ ...prev, [field]: !prev[field] }));
+  }
+
+  async function saveApiKeys() {
+    setSavingKeys(true);
+    const keyMap: { provider: string; key_name: string; value: string }[] = [
+      { provider: "openai", key_name: "api_key", value: apiKeys.openai_api_key },
+      { provider: "whatsapp", key_name: "access_token", value: apiKeys.wa_access_token },
+      { provider: "whatsapp", key_name: "phone_number_id", value: apiKeys.wa_phone_number_id },
+      { provider: "twilio", key_name: "account_sid", value: apiKeys.twilio_account_sid },
+      { provider: "twilio", key_name: "auth_token", value: apiKeys.twilio_auth_token },
+      { provider: "smtp", key_name: "host", value: apiKeys.smtp_host },
+      { provider: "smtp", key_name: "user", value: apiKeys.smtp_user },
+      { provider: "smtp", key_name: "pass", value: apiKeys.smtp_pass },
+    ].filter((k) => k.value.trim());
+
+    await Promise.all(
+      keyMap.map((k) =>
+        fetch("/api/settings/api-keys", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(k),
+        })
+      )
+    );
+    setSavingKeys(false);
+  }
   const router = useRouter();
 
-  function handleNext() {
+  async function handleNext() {
+    if (currentStep === 3) {
+      await saveApiKeys();
+    }
     if (currentStep < 4) setCurrentStep(currentStep + 1);
     else router.push("/dashboard");
   }
@@ -211,65 +256,169 @@ export default function OnboardingPage() {
         )}
 
         {currentStep === 3 && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <h2 className="text-xl font-bold text-white mb-1">Connect Your Tools</h2>
-              <p className="text-sm text-white/40">Link your channels to start automating (you can do this later)</p>
+              <h2 className="text-xl font-bold text-white mb-1">Add Your API Keys</h2>
+              <p className="text-sm text-white/40">
+                Vorynto AI uses your own API keys — you pay providers directly, we only charge the platform fee.
+                All fields are optional and can be added later in Settings.
+              </p>
             </div>
 
-            <div className="space-y-3">
-              {[
-                {
-                  icon: MessageSquare,
-                  name: "WhatsApp Business API",
-                  desc: "Connect your WhatsApp Business account for AI chatbot",
-                  color: "text-emerald-400",
-                  bg: "bg-emerald-600/20",
-                  key: "connectWhatsApp",
-                },
-                {
-                  icon: BarChart3,
-                  name: "Meta Ads (Facebook/Instagram)",
-                  desc: "Connect your ad account for AI campaign management",
-                  color: "text-blue-400",
-                  bg: "bg-blue-600/20",
-                  key: "connectMeta",
-                },
-                {
-                  icon: Globe,
-                  name: "Your Website",
-                  desc: "Add our chatbot widget to any website",
-                  color: "text-violet-400",
-                  bg: "bg-violet-600/20",
-                  key: null,
-                },
-              ].map((item) => (
-                <div key={item.name} className="glass-card p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl ${item.bg} flex items-center justify-center`}>
-                      <item.icon className={`w-5 h-5 ${item.color}`} />
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-white">{item.name}</div>
-                      <div className="text-xs text-white/40">{item.desc}</div>
-                    </div>
+            {/* Info banner */}
+            <div className="flex gap-2 p-3 rounded-xl bg-violet-600/10 border border-violet-500/20">
+              <AlertCircle className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-white/50">
+                Keys are encrypted and stored securely. You can skip any section and configure later in <strong className="text-white">Settings → API Keys</strong>.
+              </p>
+            </div>
+
+            {/* OpenAI */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-white flex items-center gap-1.5">
+                  <span className="text-lg">🤖</span> OpenAI API Key
+                </label>
+                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer"
+                  className="text-[11px] text-violet-400 flex items-center gap-0.5 hover:text-violet-300">
+                  Get key <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <p className="text-xs text-white/30">Used by AI CRM, Chatbot, Voice Bot, and SEO features</p>
+              <div className="relative">
+                <input
+                  type={showKey.openai ? "text" : "password"}
+                  value={apiKeys.openai_api_key}
+                  onChange={(e) => setApiKeys({ ...apiKeys, openai_api_key: e.target.value })}
+                  placeholder="sk-proj-..."
+                  className="input-dark pr-10 font-mono text-sm"
+                />
+                <button type="button" onClick={() => toggleShow("openai")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+                  {showKey.openai ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* WhatsApp */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-white flex items-center gap-1.5">
+                <span className="text-lg">💬</span> WhatsApp Business API
+              </label>
+              <p className="text-xs text-white/30">Required for WhatsApp bot and WhatsApp campaigns</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-white/40 mb-1">Access Token</label>
+                  <div className="relative">
+                    <input
+                      type={showKey.wa_token ? "text" : "password"}
+                      value={apiKeys.wa_access_token}
+                      onChange={(e) => setApiKeys({ ...apiKeys, wa_access_token: e.target.value })}
+                      placeholder="EAAx..."
+                      className="input-dark pr-8 text-sm font-mono"
+                    />
+                    <button type="button" onClick={() => toggleShow("wa_token")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30">
+                      {showKey.wa_token ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
                   </div>
-                  {item.key ? (
-                    <button className="px-3 py-1.5 text-xs font-medium border border-violet-500/30 text-violet-300 rounded-lg hover:bg-violet-600/10 transition-all">
-                      Connect
-                    </button>
-                  ) : (
-                    <button className="px-3 py-1.5 text-xs font-medium border border-white/10 text-white/40 rounded-lg hover:bg-white/5 transition-all">
-                      Get Code
-                    </button>
-                  )}
                 </div>
-              ))}
+                <div>
+                  <label className="block text-xs text-white/40 mb-1">Phone Number ID</label>
+                  <input
+                    type="text"
+                    value={apiKeys.wa_phone_number_id}
+                    onChange={(e) => setApiKeys({ ...apiKeys, wa_phone_number_id: e.target.value })}
+                    placeholder="12345678901234"
+                    className="input-dark text-sm font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Twilio SMS */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-white flex items-center gap-1.5">
+                <span className="text-lg">📱</span> Twilio (SMS Campaigns)
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-white/40 mb-1">Account SID</label>
+                  <input
+                    type="text"
+                    value={apiKeys.twilio_account_sid}
+                    onChange={(e) => setApiKeys({ ...apiKeys, twilio_account_sid: e.target.value })}
+                    placeholder="ACxx..."
+                    className="input-dark text-sm font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-white/40 mb-1">Auth Token</label>
+                  <div className="relative">
+                    <input
+                      type={showKey.twilio ? "text" : "password"}
+                      value={apiKeys.twilio_auth_token}
+                      onChange={(e) => setApiKeys({ ...apiKeys, twilio_auth_token: e.target.value })}
+                      placeholder="••••••••••••••"
+                      className="input-dark pr-8 text-sm font-mono"
+                    />
+                    <button type="button" onClick={() => toggleShow("twilio")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30">
+                      {showKey.twilio ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SMTP Email */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-white flex items-center gap-1.5">
+                <span className="text-lg">📧</span> Email (SMTP)
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <label className="block text-xs text-white/40 mb-1">SMTP Host</label>
+                  <input
+                    type="text"
+                    value={apiKeys.smtp_host}
+                    onChange={(e) => setApiKeys({ ...apiKeys, smtp_host: e.target.value })}
+                    placeholder="smtp.resend.com"
+                    className="input-dark text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-white/40 mb-1">Username</label>
+                  <input
+                    type="text"
+                    value={apiKeys.smtp_user}
+                    onChange={(e) => setApiKeys({ ...apiKeys, smtp_user: e.target.value })}
+                    placeholder="resend"
+                    className="input-dark text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-white/40 mb-1">SMTP Password / API Key</label>
+                <div className="relative">
+                  <input
+                    type={showKey.smtp ? "text" : "password"}
+                    value={apiKeys.smtp_pass}
+                    onChange={(e) => setApiKeys({ ...apiKeys, smtp_pass: e.target.value })}
+                    placeholder="re_xxxxxxxxxxxxxxxxxxxx"
+                    className="input-dark pr-10 text-sm font-mono"
+                  />
+                  <button type="button" onClick={() => toggleShow("smtp")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30">
+                    {showKey.smtp ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
             </div>
 
             <p className="text-xs text-white/30 text-center">
-              Need help? Our team can set these up for you.{" "}
-              <a href="/contact" className="text-violet-400">Contact support</a>
+              Need help finding your API keys?{" "}
+              <a href="/contact" className="text-violet-400 hover:text-violet-300">Contact our support team →</a>
             </p>
           </div>
         )}
@@ -311,12 +460,25 @@ export default function OnboardingPage() {
           ) : (
             <div />
           )}
-          <button onClick={handleNext} className="btn-primary text-sm py-2.5 px-6">
-            {currentStep === 4 ? "Go to Dashboard" : currentStep === 3 ? "Skip & Continue" : "Continue"}
-            {currentStep < 4 ? (
-              <ChevronRight className="w-4 h-4" />
+          <button
+            onClick={handleNext}
+            disabled={savingKeys}
+            className="btn-primary text-sm py-2.5 px-6 disabled:opacity-60 flex items-center gap-2"
+          >
+            {savingKeys ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                Saving…
+              </span>
+            ) : currentStep === 4 ? (
+              <><ArrowRight className="w-4 h-4" /> Go to Dashboard</>
+            ) : currentStep === 3 ? (
+              <><ChevronRight className="w-4 h-4" /> Save &amp; Continue</>
             ) : (
-              <ArrowRight className="w-4 h-4" />
+              <><ChevronRight className="w-4 h-4" /> Continue</>
             )}
           </button>
         </div>

@@ -1,5 +1,8 @@
 import Header from "@/components/dashboard/Header";
 import StatsCard from "@/components/dashboard/StatsCard";
+import SetupRequired from "@/components/ui/SetupRequired";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentTenantId, hasRequiredKeys } from "@/lib/tenant-keys";
 import { Mic, Phone, Clock, TrendingUp, Plus, Play, Pause, Settings } from "lucide-react";
 
 const callLogs = [
@@ -16,9 +19,23 @@ const sentimentConfig: Record<string, string> = {
   negative: "text-red-400 bg-red-500/10 border-red-500/20",
 };
 
-export default function VoiceBotPage() {
+export default async function VoiceBotPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const tenantId = user ? await getCurrentTenantId(user.id) : null;
+  const ready = tenantId
+    ? await hasRequiredKeys(tenantId, "openai", ["api_key"])
+    : false;
   return (
     <div>
+      {!ready && (
+        <SetupRequired
+          provider="openai"
+          title="OpenAI API key not configured"
+          description="The Voice Bot uses OpenAI to understand and respond to spoken conversations. Add your API key to activate it."
+          keys={["api_key"]}
+        />
+      )}
       <Header
         title="Voice Bot"
         subtitle="AI-powered voice conversations for phone and web"
