@@ -9,12 +9,21 @@ const AUTH_ROUTES = ["/login", "/signup", "/onboarding"];
 const ADMIN_ROUTES = ["/admin"];
 
 export async function middleware(request: NextRequest) {
+  // Guard: if env vars are missing, allow the request through so pages can
+  // render their own error UI rather than crashing at the middleware layer.
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
   const { pathname } = request.nextUrl;
 
   const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
@@ -33,13 +42,21 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Wrap in try-catch so a Supabase outage / paused project never causes a
+  // middleware 500 that takes down every route on the site.
+  let user: { id: string } | null = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch {
+    // Supabase unreachable — treat as unauthenticated and continue
+    return supabaseResponse;
+  }
 
   const isPublic = PUBLIC_ROUTES.some((r) => pathname === r || pathname.startsWith("/api/webhooks"));
   const isAuthRoute = AUTH_ROUTES.some((r) => pathname.startsWith(r));
 
+  // Redirect unauthenticated users away from protected routes
   if (!user && !isPublic && !isAuthRoute) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
@@ -47,30 +64,40 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Redirect authenticated users away from auth routes
   if (user && isAuthRoute) {
-    // Super admins go to the admin panel; regular users go to the dashboard
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .returns<{ role: UserRole | null }[]>()
-      .maybeSingle();
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .returns<{ role: UserRole | null }[]>()
+        .maybeSingle();
 
-    if (profile?.role === "super_admin") {
-      return NextResponse.redirect(new URL("/admin", request.url));
+      if (profile?.role === "super_admin") {
+        return NextResponse.redirect(new URL("/admin", request.url));
+      }
+    } catch {
+      // profile lookup failed — fall through to default redirect
     }
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
+  // Block non-super-admins from admin routes
   if (user && ADMIN_ROUTES.some((r) => pathname.startsWith(r))) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .returns<{ role: UserRole | null }[]>()
-      .maybeSingle();
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .returns<{ role: UserRole | null }[]>()
+        .maybeSingle();
 
-    if (!profile || profile.role !== "super_admin") {
+      if (!profile || profile.role !== "super_admin") {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+    } catch {
+      // profile lookup failed — redirect to dashboard to be safe
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }

@@ -22,7 +22,7 @@ export default async function AdminLayout({
     .select("role")
     .eq("id", user.id)
     .returns<{ role: UserRole | null }[]>()
-    .single();
+    .maybeSingle();
 
   if (!profile || profile.role !== "super_admin") redirect("/dashboard");
 
