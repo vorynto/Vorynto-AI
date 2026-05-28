@@ -7,3 +7,13 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 }
+
+/**
+ * Escape-hatch for the PostgREST v14 TypeScript bug where
+ * .insert() / .update() argument types collapse to `never`.
+ * Only use for mutations — reads should use the typed createClient().
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function mutationClient(): { from: (table: string) => any } {
+  return createClient() as unknown as { from: (table: string) => any };
+}
