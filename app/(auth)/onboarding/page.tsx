@@ -39,14 +39,32 @@ export default function OnboardingPage() {
   });
 
   const [showKey, setShowKey] = useState<Record<string, boolean>>({});
-  const [savingKeys, setSavingKeys] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   function toggleShow(field: string) {
     setShowKey((prev) => ({ ...prev, [field]: !prev[field] }));
   }
 
+  async function createTenant() {
+    const res = await fetch("/api/tenants", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        companyName: formData.companyName,
+        website: formData.website,
+        industry: formData.industry,
+        teamSize: formData.teamSize,
+        phone: formData.phone,
+        country: formData.country,
+      }),
+    });
+    const data = await res.json() as { ok?: boolean; error?: string };
+    if (!res.ok) throw new Error(data.error ?? "Failed to create tenant");
+  }
+
   async function saveApiKeys() {
-    setSavingKeys(true);
     const keyMap: { provider: string; key_name: string; value: string }[] = [
       { provider: "openai", key_name: "api_key", value: apiKeys.openai_api_key },
       { provider: "whatsapp", key_name: "access_token", value: apiKeys.wa_access_token },
@@ -67,16 +85,39 @@ export default function OnboardingPage() {
         })
       )
     );
-    setSavingKeys(false);
   }
-  const router = useRouter();
+
+  async function markSetupComplete() {
+    await fetch("/api/tenants/complete", { method: "POST" });
+  }
 
   async function handleNext() {
-    if (currentStep === 3) {
-      await saveApiKeys();
+    setError(null);
+    setSaving(true);
+    try {
+      if (currentStep === 1) {
+        if (!formData.companyName.trim()) {
+          setError("Company name is required.");
+          setSaving(false);
+          return;
+        }
+        // Create the tenant and link user to it
+        await createTenant();
+      }
+      if (currentStep === 3) {
+        await saveApiKeys();
+      }
+      if (currentStep === 4) {
+        await markSetupComplete();
+        router.push("/dashboard");
+        return;
+      }
+      setCurrentStep((s) => s + 1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setSaving(false);
     }
-    if (currentStep < 4) setCurrentStep(currentStep + 1);
-    else router.push("/dashboard");
   }
 
   return (
@@ -462,10 +503,10 @@ export default function OnboardingPage() {
           )}
           <button
             onClick={handleNext}
-            disabled={savingKeys}
+            disabled={saving}
             className="btn-primary text-sm py-2.5 px-6 disabled:opacity-60 flex items-center gap-2"
           >
-            {savingKeys ? (
+            {saving ? (
               <span className="flex items-center gap-2">
                 <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -477,11 +518,19 @@ export default function OnboardingPage() {
               <><ArrowRight className="w-4 h-4" /> Go to Dashboard</>
             ) : currentStep === 3 ? (
               <><ChevronRight className="w-4 h-4" /> Save &amp; Continue</>
+            ) : currentStep === 1 ? (
+              <><ChevronRight className="w-4 h-4" /> Save &amp; Continue</>
             ) : (
               <><ChevronRight className="w-4 h-4" /> Continue</>
             )}
           </button>
         </div>
+        {error && (
+          <div className="mt-3 flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            {error}
+          </div>
+        )}
       </div>
     </div>
   );
