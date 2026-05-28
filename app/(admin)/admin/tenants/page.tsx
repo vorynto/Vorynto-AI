@@ -33,12 +33,12 @@ export default async function AdminTenantsPage() {
   return (
     <div>
       <AdminHeader
-        title="Tenants"
-        subtitle="Manage all customer company accounts on the platform"
+        title="Clients"
+        subtitle="Manage all client company accounts on the platform"
         breadcrumb="Platform Management"
         action={
           <button className="btn-primary text-sm py-2 px-4 flex items-center gap-1.5">
-            <Plus className="w-4 h-4" /> Create Tenant
+            <Plus className="w-4 h-4" /> Add Client
           </button>
         }
       />

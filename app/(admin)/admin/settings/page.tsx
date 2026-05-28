@@ -60,7 +60,7 @@ export default async function AdminSettingsPage() {
       color: "text-emerald-400",
       bg: "bg-emerald-600/20",
       items: [
-        { label: "New Tenant Sign-up", value: "Email + Slack", type: "text" },
+        { label: "New Client Sign-up", value: "Email + Slack", type: "text" },
         { label: "Payment Failure", value: "Email", type: "text" },
         { label: "Support Ticket Opened", value: "Email", type: "text" },
         { label: "System Errors", value: "Email + Slack", type: "text" },
@@ -139,9 +139,9 @@ export default async function AdminSettingsPage() {
           </div>
           <div className="space-y-3">
             {[
-              { label: "Flush All Sessions", desc: "Immediately log out all users across all tenants" },
+              { label: "Flush All Sessions", desc: "Immediately log out all users across all clients" },
               { label: "Reset Platform Cache", desc: "Clear all cached data and force a fresh reload" },
-              { label: "Export All Data", desc: "Download a full backup of all tenant and user data" },
+              { label: "Export All Data", desc: "Download a full backup of all client and user data" },
             ].map((action) => (
               <div key={action.label} className="flex items-center justify-between p-3 rounded-xl bg-red-500/5 border border-red-500/10">
                 <div>

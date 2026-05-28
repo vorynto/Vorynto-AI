@@ -41,7 +41,7 @@ export default async function AdminDashboardPage() {
   const activePlans = plansData.data ?? [];
 
   const statsCards = [
-    { label: "Total Tenants", value: (tenantCount ?? 0).toLocaleString(), icon: Building2, color: "text-violet-400", bg: "bg-violet-600/20", change: "+8.5%" },
+    { label: "Total Clients", value: (tenantCount ?? 0).toLocaleString(), icon: Building2, color: "text-violet-400", bg: "bg-violet-600/20", change: "+8.5%" },
     { label: "Total Users", value: (userCount ?? 0).toLocaleString(), icon: Users, color: "text-emerald-400", bg: "bg-emerald-600/20", change: "+12.3%" },
     { label: "Active Plans", value: activePlans.length.toString(), icon: CreditCard, color: "text-amber-400", bg: "bg-amber-600/20", change: "" },
     { label: "MRR (est.)", value: "—", icon: TrendingUp, color: "text-cyan-400", bg: "bg-cyan-600/20", change: "" },
@@ -51,10 +51,10 @@ export default async function AdminDashboardPage() {
     <div>
       <AdminHeader
         title="Platform Overview"
-        subtitle="Full visibility across all tenants, users, and subscriptions"
+        subtitle="Full visibility across all clients, users, and subscriptions"
         action={
           <Link href="/admin/tenants" className="btn-primary text-sm py-2 px-4 flex items-center gap-1.5">
-            <Plus className="w-4 h-4" /> New Tenant
+            <Plus className="w-4 h-4" /> New Client
           </Link>
         }
       />
@@ -80,7 +80,7 @@ export default async function AdminDashboardPage() {
           {/* Recent tenants */}
           <div className="xl:col-span-2 glass-card overflow-hidden">
             <div className="flex items-center justify-between p-5 border-b border-white/5">
-              <h2 className="text-sm font-semibold text-white">Recent Tenants</h2>
+              <h2 className="text-sm font-semibold text-white">Recent Clients</h2>
               <Link href="/admin/tenants" className="text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1">
                 View all <ArrowRight className="w-3 h-3" />
               </Link>
@@ -88,9 +88,9 @@ export default async function AdminDashboardPage() {
             {recentTenants.length === 0 ? (
               <div className="p-10 text-center">
                 <Building2 className="w-8 h-8 text-white/10 mx-auto mb-2" />
-                <p className="text-sm text-white/30">No tenants yet</p>
+                <p className="text-sm text-white/30">No clients yet</p>
                 <Link href="/admin/tenants" className="mt-3 inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300">
-                  <Plus className="w-3.5 h-3.5" /> Create the first tenant
+                  <Plus className="w-3.5 h-3.5" /> Add the first client
                 </Link>
               </div>
             ) : (
@@ -136,7 +136,7 @@ export default async function AdminDashboardPage() {
               </h2>
               <div className="space-y-2">
                 {[
-                  { label: "Add New Tenant", href: "/admin/tenants", icon: "🏢" },
+                  { label: "Add New Client", href: "/admin/tenants", icon: "🏢" },
                   { label: "Manage Plans", href: "/admin/plans", icon: "💳" },
                   { label: "Invite User", href: "/admin/users", icon: "👤" },
                   { label: "CMS Content", href: "/admin/content", icon: "📄" },

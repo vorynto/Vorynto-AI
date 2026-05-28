@@ -37,7 +37,7 @@ export default async function AdminAccountsPage() {
     <div>
       <AdminHeader
         title="Account Overview"
-        subtitle="Platform-wide view of tenant API key setup and integration status"
+        subtitle="Platform-wide view of client API key setup and integration status"
         breadcrumb="Platform Management"
       />
 
@@ -63,9 +63,9 @@ export default async function AdminAccountsPage() {
         {list.length === 0 ? (
           <div className="glass-card p-10 text-center">
             <Building2 className="w-10 h-10 text-white/10 mx-auto mb-3" />
-            <p className="text-sm text-white/30">No tenant accounts yet</p>
+            <p className="text-sm text-white/30">No client accounts yet</p>
             <Link href="/admin/tenants" className="mt-4 inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300">
-              Go to Tenants <ArrowRight className="w-3 h-3" />
+              Go to Clients <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
         ) : (

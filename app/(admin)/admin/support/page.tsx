@@ -80,7 +80,7 @@ export default function AdminSupportPage() {
     <div>
       <AdminHeader
         title="Support Tickets"
-        subtitle="Handle inbound support requests from tenants"
+        subtitle="Handle inbound support requests from clients"
         breadcrumb="Platform Management"
       />
 

@@ -86,8 +86,8 @@ export default function TenantManager({ initialTenants }: Props) {
       {/* Stats */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         {[
-          { label: "Total Tenants", value: stats.total, icon: Building2, color: "text-violet-400", bg: "bg-violet-600/20" },
-          { label: "Active Tenants", value: stats.active, icon: CheckCircle2, color: "text-emerald-400", bg: "bg-emerald-600/20" },
+          { label: "Total Clients", value: stats.total, icon: Building2, color: "text-violet-400", bg: "bg-violet-600/20" },
+          { label: "Active Clients", value: stats.active, icon: CheckCircle2, color: "text-emerald-400", bg: "bg-emerald-600/20" },
           { label: "Setup Complete", value: stats.setupComplete, icon: Globe, color: "text-cyan-400", bg: "bg-cyan-600/20" },
           { label: "With Subscription", value: stats.withSub, icon: Users, color: "text-amber-400", bg: "bg-amber-600/20" },
         ].map((s) => (
@@ -109,7 +109,7 @@ export default function TenantManager({ initialTenants }: Props) {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, email, or slug..."
+            placeholder="Search by name, email, or slug…"
             className="bg-transparent text-sm text-white/60 placeholder:text-white/30 outline-none flex-1 min-w-0"
           />
         </div>
@@ -132,7 +132,7 @@ export default function TenantManager({ initialTenants }: Props) {
       <div className="glass-card overflow-hidden">
         <div className="p-5 border-b border-white/5 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-white">
-            All Tenants <span className="text-white/30 font-normal">({filtered.length})</span>
+            All Clients <span className="text-white/30 font-normal">({filtered.length})</span>
           </h2>
         </div>
 
@@ -140,7 +140,7 @@ export default function TenantManager({ initialTenants }: Props) {
           <div className="p-10 text-center">
             <Building2 className="w-8 h-8 text-white/10 mx-auto mb-2" />
             <p className="text-sm text-white/30">
-              {search || statusFilter !== "all" ? "No tenants match your filters" : "No tenants yet"}
+              {search || statusFilter !== "all" ? "No clients match your filters" : "No clients yet"}
             </p>
           </div>
         ) : (

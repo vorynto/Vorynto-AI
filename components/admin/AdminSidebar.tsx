@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 
 const navItems = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
-  { label: "Tenants", href: "/admin/tenants", icon: Building2 },
+  { label: "Clients", href: "/admin/tenants", icon: Building2 },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Subscription Plans", href: "/admin/plans", icon: CreditCard },
   { label: "CMS Content", href: "/admin/content", icon: FileText },

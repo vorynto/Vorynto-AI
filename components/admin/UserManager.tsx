@@ -25,7 +25,7 @@ const ROLES = ["super_admin", "tenant_admin", "tenant_user"] as const;
 
 const roleConfig: Record<string, { label: string; color: string; bg: string; border: string }> = {
   super_admin: { label: "Super Admin", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20" },
-  tenant_admin: { label: "Tenant Admin", color: "text-violet-400", bg: "bg-violet-500/10", border: "border-violet-500/20" },
+  tenant_admin: { label: "Client Admin", color: "text-violet-400", bg: "bg-violet-500/10", border: "border-violet-500/20" },
   tenant_user: { label: "User", color: "text-white/50", bg: "bg-white/5", border: "border-white/10" },
 };
 
@@ -140,7 +140,7 @@ export default function UserManager({ initialUsers }: Props) {
         {[
           { label: "Total Users", value: stats.total, icon: CheckCircle2, color: "text-violet-400", bg: "bg-violet-600/20" },
           { label: "Super Admins", value: stats.superAdmins, icon: Shield, color: "text-amber-400", bg: "bg-amber-600/20" },
-          { label: "Tenant Admins", value: stats.tenantAdmins, icon: Building2, color: "text-emerald-400", bg: "bg-emerald-600/20" },
+          { label: "Client Admins", value: stats.tenantAdmins, icon: Building2, color: "text-emerald-400", bg: "bg-emerald-600/20" },
           { label: "Active Users", value: stats.active, icon: UserPlus, color: "text-cyan-400", bg: "bg-cyan-600/20" },
         ].map((s) => (
           <div key={s.label} className="glass-card p-5">
@@ -209,7 +209,7 @@ export default function UserManager({ initialUsers }: Props) {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-white/5">
-                  {["User", "Tenant", "Role", "Status", "Last Seen", "Actions"].map((h) => (
+                  {["User", "Client", "Role", "Status", "Last Seen", "Actions"].map((h) => (
                     <th key={h} className="text-left py-3 px-4 text-xs font-medium text-white/30 first:pl-5">{h}</th>
                   ))}
                 </tr>
