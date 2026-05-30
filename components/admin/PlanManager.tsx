@@ -350,6 +350,41 @@ export default function PlanManager({ initialPlans }: Props) {
                 </div>
               </div>
 
+              {/* Razorpay Plan IDs */}
+              <div className="p-4 rounded-xl bg-sky-600/5 border border-sky-500/15 space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-base">💳</span>
+                  <label className="text-xs font-semibold text-sky-400">Razorpay Plan IDs</label>
+                  <span className="text-[11px] text-white/25 ml-auto">
+                    Create plans at <a href="https://dashboard.razorpay.com/app/subscriptions/plans" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">Razorpay → Plans</a>
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-white/50 mb-1.5">Monthly Plan ID</label>
+                    <input
+                      type="text"
+                      value={(editor.plan?.razorpay_plan_id_monthly as string | null) ?? ""}
+                      onChange={(e) => setPlanField("razorpay_plan_id_monthly", e.target.value || null)}
+                      placeholder="plan_xxxxxxxxxxxx"
+                      className="input-dark font-mono text-sm"
+                    />
+                    <p className="text-[11px] text-white/25 mt-1">Required for recurring monthly checkout</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-white/50 mb-1.5">Yearly Plan ID</label>
+                    <input
+                      type="text"
+                      value={(editor.plan?.razorpay_plan_id_yearly as string | null) ?? ""}
+                      onChange={(e) => setPlanField("razorpay_plan_id_yearly", e.target.value || null)}
+                      placeholder="plan_xxxxxxxxxxxx"
+                      className="input-dark font-mono text-sm"
+                    />
+                    <p className="text-[11px] text-white/25 mt-1">Required for recurring yearly checkout</p>
+                  </div>
+                </div>
+              </div>
+
               {/* Feature limits */}
               <div>
                 <label className="block text-xs font-medium text-white/50 mb-2">Feature Limits <span className="text-white/20">(-1 = unlimited)</span></label>

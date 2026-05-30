@@ -1,11 +1,17 @@
 import Header from "@/components/dashboard/Header";
 import ApiKeysManager from "@/components/settings/ApiKeysManager";
+import BillingSection from "@/components/billing/BillingSection";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { maskKey, getCurrentTenantId } from "@/lib/tenant-keys";
+import { getRazorpayConfig } from "@/lib/razorpay";
+import type { Database } from "@/types/supabase";
 import {
-  User, Bell, Shield, Key, CreditCard, Globe,
+  User, Bell, Shield, Key, CreditCard,
   CheckCircle2, AlertCircle, Building2,
 } from "lucide-react";
+
+type Plan = Database["public"]["Tables"]["subscription_plans"]["Row"];
+type Subscription = Database["public"]["Tables"]["subscriptions"]["Row"];
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -13,8 +19,13 @@ export default async function SettingsPage() {
 
   let initialKeys: Record<string, Record<string, { id: string; masked: string; saved: boolean; verified: boolean }>> = {};
   let profile: { first_name: string | null; last_name: string | null; phone: string | null } | null = null;
+  let plans: Plan[] = [];
+  let currentSubscription: (Subscription & { plan: Plan | null }) | null = null;
+  let razorpayReady = false;
 
   if (user) {
+    const admin = await createAdminClient();
+
     // Load profile
     const { data: profileData } = await supabase
       .from("profiles")
@@ -24,10 +35,9 @@ export default async function SettingsPage() {
       .maybeSingle();
     profile = profileData;
 
-    // Load tenant API keys (admin client so RLS doesn't block)
     const tenantId = await getCurrentTenantId(user.id);
     if (tenantId) {
-      const admin = await createAdminClient();
+      // Load tenant API keys
       const { data: rows } = await admin
         .from("tenant_api_keys")
         .select("id, provider, key_name, encrypted_value, is_verified")
@@ -49,7 +59,33 @@ export default async function SettingsPage() {
           verified: row.is_verified ?? false,
         };
       }
+
+      // Load active subscription
+      const { data: sub } = await admin
+        .from("subscriptions")
+        .select("*, subscription_plans(*)")
+        .eq("tenant_id", tenantId)
+        .eq("status", "active")
+        .returns<(Subscription & { subscription_plans: Plan | null })[]>()
+        .maybeSingle();
+
+      if (sub) {
+        currentSubscription = { ...sub, plan: sub.subscription_plans };
+      }
     }
+
+    // Load all active plans
+    const { data: plansData } = await admin
+      .from("subscription_plans")
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .returns<Plan[]>();
+    plans = plansData ?? [];
+
+    // Check if Razorpay is configured (for showing checkout buttons)
+    const rzpConfig = await getRazorpayConfig();
+    razorpayReady = rzpConfig.isConfigured;
   }
 
   return (
@@ -212,58 +248,110 @@ export default async function SettingsPage() {
           </div>
         </section>
 
-        {/* ── Billing ──────────────────────────────────────────── */}
-        <section className="glass-card p-6 bg-gradient-to-br from-violet-600/10 to-transparent border-violet-500/20">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-semibold text-white mb-1 flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-violet-400" />
-                Billing &amp; Subscription
-              </h2>
-              <p className="text-sm text-white/40">
-                Platform fee only — API usage is billed directly by each provider
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <button className="btn-secondary text-sm py-2 px-4">View Invoices</button>
-              <button className="btn-primary text-sm py-2 px-4">Upgrade Plan</button>
-            </div>
-          </div>
-          <div className="mt-4 p-4 rounded-xl bg-white/3 border border-white/5">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <span className="text-white font-semibold">Growth Plan</span>
-                <span className="ml-2 text-white/40 text-sm">· $149 / month</span>
-              </div>
-              <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> Active
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { label: "Contacts", value: "2,847 / 5,000", pct: 57 },
-                { label: "Campaign messages", value: "6,200 / 10,000", pct: 62 },
-                { label: "Voice minutes", value: "78 / 100", pct: 78 },
-              ].map((u) => (
-                <div key={u.label}>
-                  <div className="flex justify-between text-xs text-white/40 mb-1">
-                    <span>{u.label}</span><span>{u.value}</span>
-                  </div>
-                  <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${u.pct > 80 ? "bg-amber-500" : "bg-gradient-to-r from-violet-600 to-cyan-500"}`}
-                      style={{ width: `${u.pct}%` }}
-                    />
+        {/* ── Payment Gateway ──────────────────────────────────── */}
+        <section className="glass-card p-6">
+          <h2 className="text-base font-semibold text-white mb-1 flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-sky-400" />
+            Payment Gateway
+          </h2>
+          <p className="text-xs text-white/40 mt-1 mb-5">
+            Collect payments from your customers via Razorpay — UPI, cards, net banking &amp; wallets.
+            Configure your keys in the API Keys section above.
+          </p>
+
+          {initialKeys.razorpay?.key_id ? (
+            <div className="space-y-4">
+              {/* Connected status */}
+              <div className="flex items-center justify-between p-4 rounded-xl bg-emerald-600/10 border border-emerald-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-sky-600/20 flex items-center justify-center text-lg">💳</div>
+                  <div>
+                    <div className="text-sm font-semibold text-white flex items-center gap-2">
+                      Razorpay
+                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Connected
+                      </span>
+                      {initialKeys.razorpay.key_id.masked.includes("test") || initialKeys.razorpay.key_id.masked.endsWith("est") ? (
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          Test Mode
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                          Live Mode
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-white/40 mt-0.5">
+                      Key ID: <span className="font-mono">{initialKeys.razorpay.key_id.masked}</span>
+                      {initialKeys.razorpay.key_secret && (
+                        <span className="ml-3">· Key Secret: saved</span>
+                      )}
+                      {initialKeys.razorpay.webhook_secret && (
+                        <span className="ml-3">· Webhook: configured</span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              ))}
+                <a
+                  href="https://dashboard.razorpay.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-sky-400 hover:text-sky-300 flex items-center gap-1"
+                >
+                  Dashboard →
+                </a>
+              </div>
+
+              {/* Quick reference */}
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: "Accepted Payments", value: "UPI, Cards, NetBanking, Wallets" },
+                  { label: "Supported Currencies", value: "INR (primary) + 100+ currencies" },
+                  { label: "Settlement", value: "T+2 business days" },
+                ].map((item) => (
+                  <div key={item.label} className="p-3 rounded-xl bg-white/3 border border-white/5">
+                    <div className="text-[11px] text-white/40 mb-1">{item.label}</div>
+                    <div className="text-xs font-medium text-white">{item.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-xs text-white/30 flex items-center gap-1.5">
+                <AlertCircle className="w-3 h-3 shrink-0 text-amber-400/60" />
+                To switch between Test and Live mode, update your Key ID and Key Secret in the API Keys section above.
+                Use <span className="font-mono mx-1 text-white/50">rzp_test_...</span> for test mode and
+                <span className="font-mono mx-1 text-white/50">rzp_live_...</span> for production.
+              </p>
             </div>
-          </div>
-          <p className="text-xs text-white/30 mt-3 flex items-center gap-1.5">
-            <Globe className="w-3 h-3 shrink-0" />
-            OpenAI, WhatsApp, Twilio, and email provider costs are billed separately by those providers — not by Vorynto AI.
-          </p>
+          ) : (
+            <div className="flex items-center justify-between p-4 rounded-xl bg-white/3 border border-white/5 border-dashed">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-sky-600/20 flex items-center justify-center text-lg">💳</div>
+                <div>
+                  <div className="text-sm font-semibold text-white">Razorpay not configured</div>
+                  <div className="text-xs text-white/40 mt-0.5">
+                    Add your Key ID and Key Secret in the API Keys section above to enable payments.
+                  </div>
+                </div>
+              </div>
+              <a
+                href="https://dashboard.razorpay.com/app/keys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-secondary text-xs py-1.5 px-3"
+              >
+                Get Keys →
+              </a>
+            </div>
+          )}
         </section>
+
+        {/* ── Billing & Subscription ───────────────────────────── */}
+        <BillingSection
+          plans={plans}
+          currentSubscription={currentSubscription}
+          razorpayReady={razorpayReady}
+        />
 
       </div>
     </div>

@@ -206,6 +206,37 @@ const PROVIDERS: ProviderConfig[] = [
       },
     ],
   },
+  {
+    id: "razorpay",
+    label: "Razorpay (Payment Gateway)",
+    icon: "💳",
+    color: "text-sky-400",
+    bgColor: "bg-sky-600/20",
+    description: "Accept payments via Razorpay — UPI, cards, net banking, wallets & more",
+    docUrl: "https://dashboard.razorpay.com/app/keys",
+    fields: [
+      {
+        name: "key_id",
+        label: "Key ID",
+        placeholder: "rzp_live_xxxxxxxxxxxx",
+        hint: "From Razorpay Dashboard → Settings → API Keys. Use rzp_test_... for test mode.",
+      },
+      {
+        name: "key_secret",
+        label: "Key Secret",
+        placeholder: "••••••••••••••••••••••••",
+        type: "password",
+        hint: "Never share this. Used server-side to verify payment signatures.",
+      },
+      {
+        name: "webhook_secret",
+        label: "Webhook Secret",
+        placeholder: "••••••••••••••••••••••••",
+        type: "password",
+        hint: "From Razorpay Dashboard → Settings → Webhooks. Used to verify incoming webhook events.",
+      },
+    ],
+  },
 ];
 
 /* ─── Component ─────────────────────────────────────────────── */

@@ -53,7 +53,7 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  const isPublic = PUBLIC_ROUTES.some((r) => pathname === r || pathname.startsWith("/api/webhooks"));
+  const isPublic = PUBLIC_ROUTES.some((r) => pathname === r || pathname.startsWith("/api/"));
   const isAuthRoute = AUTH_ROUTES.some((r) => pathname.startsWith(r));
 
   // Redirect unauthenticated users away from protected routes

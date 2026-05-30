@@ -20,7 +20,7 @@
 
 import { createAdminClient } from "@/lib/supabase/server";
 
-export type Provider = "openai" | "whatsapp" | "twilio" | "smtp" | "meta";
+export type Provider = "openai" | "whatsapp" | "twilio" | "smtp" | "meta" | "razorpay";
 
 /**
  * Fetch a single API key value for a tenant.

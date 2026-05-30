@@ -1,92 +1,138 @@
-import { ShoppingCart, Settings, Zap, TrendingUp } from "lucide-react";
+"use client";
+
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef } from "react";
+import { ShoppingCart, Settings, Zap, TrendingUp, ArrowRight } from "lucide-react";
+import { viewportConfig, EASE } from "@/lib/animations";
 
 const steps = [
   {
     step: "01",
     icon: ShoppingCart,
+    time: "~2 min",
     title: "Choose Your Plan",
     description:
-      "Browse our AI tool packages and pick the plan that fits your business. Purchase in under 2 minutes with our secure checkout.",
-    color: "violet",
+      "Browse our AI tool packages and pick the plan that fits your business. Secure checkout in under 2 minutes.",
   },
   {
     step: "02",
     icon: Settings,
-    title: "Auto-Setup Your AI Agent",
+    time: "~5 min",
+    title: "Auto-Setup Your AI",
     description:
-      "After purchase, tell us about your business. Our system automatically configures your AI agent with your company details, branding, and integrations.",
-    color: "cyan",
+      "Tell us about your business. Our system automatically configures your AI agent with your company details, branding, and integrations.",
   },
   {
     step: "03",
     icon: Zap,
+    time: "~10 min",
     title: "Connect Your Channels",
     description:
-      "Link your WhatsApp Business, Meta Ads, email provider, and more. Our guided setup wizard makes it quick — or let our team handle it for you.",
-    color: "emerald",
+      "Link WhatsApp Business, Meta Ads, email, and more. Guided wizard or let our team handle it for you.",
   },
   {
     step: "04",
     icon: TrendingUp,
+    time: "Always",
     title: "Grow on Autopilot",
     description:
-      "Your AI agents work 24/7 — engaging customers, sending campaigns, managing CRM, and optimizing ads while you focus on what matters.",
-    color: "amber",
+      "Your AI agents work 24/7 — engaging customers, managing CRM, sending campaigns, and optimizing ads.",
   },
 ];
 
-const colorMap = {
-  violet: { text: "text-violet-400", bg: "bg-violet-600/20", border: "border-violet-500/30", step: "text-violet-300" },
-  cyan: { text: "text-cyan-400", bg: "bg-cyan-600/20", border: "border-cyan-500/30", step: "text-cyan-300" },
-  emerald: { text: "text-emerald-400", bg: "bg-emerald-600/20", border: "border-emerald-500/30", step: "text-emerald-300" },
-  amber: { text: "text-amber-400", bg: "bg-amber-600/20", border: "border-amber-500/30", step: "text-amber-300" },
-};
-
 export default function HowItWorks() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"],
+  });
+  const lineProgress = useTransform(scrollYProgress, [0.1, 0.7], ["0%", "100%"]);
+
   return (
-    <section className="section-padding relative">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
+    <section className="py-24 relative overflow-hidden" style={{ background: "#ebebeb" }} ref={containerRef}>
       <div className="container-max px-4 sm:px-6">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
+        {/* Header */}
+        <motion.div
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={viewportConfig}
+          transition={{ duration: 0.75, ease: EASE }}
+        >
+          <div className="section-badge mb-5 inline-flex">
+            <span>●</span> How It Works
+          </div>
+          <h2 className="text-4xl sm:text-5xl font-black text-[#1a1a1a] mb-4 leading-tight">
             Up and Running in{" "}
-            <span className="gradient-text">5 Minutes</span>
+            <span className="gradient-text-coral">Minutes</span>
           </h2>
-          <p className="text-lg text-white/50 max-w-xl mx-auto">
-            From purchase to fully operational AI agent — we have automated every step.
+          <p className="text-lg text-[#666] max-w-xl mx-auto">
+            From signup to a fully operational AI business — we've automated every step of the setup.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {steps.map((step, index) => {
-            const colors = colorMap[step.color as keyof typeof colorMap];
-            return (
-              <div key={step.step} className="relative">
-                {/* Connector line */}
-                {index < steps.length - 1 && (
-                  <div className="hidden lg:block absolute top-8 left-full w-full h-px bg-gradient-to-r from-white/20 to-transparent z-0 translate-x-4" />
-                )}
+        {/* Steps grid */}
+        <div className="relative">
+          {/* Animated connector line (desktop) */}
+          <div className="hidden lg:block absolute top-[52px] left-[14%] right-[14%] h-[2px] bg-black/6 overflow-hidden rounded-full">
+            <motion.div
+              className="h-full rounded-full"
+              style={{ width: lineProgress, background: "#e8533b" }}
+            />
+          </div>
 
-                <div className="glass-card p-6 relative z-10 h-full">
-                  {/* Step number */}
-                  <div className={`text-5xl font-black ${colors.step} opacity-20 mb-4 leading-none`}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {steps.map((step, i) => (
+              <motion.div
+                key={step.step}
+                className="relative"
+                initial={{ opacity: 0, y: 36 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={viewportConfig}
+                transition={{ duration: 0.6, delay: i * 0.1, ease: EASE }}
+              >
+                <motion.div
+                  className="light-card p-6 h-full group relative overflow-hidden"
+                  whileHover={{ y: -6, boxShadow: "0 12px 40px rgba(0,0,0,0.10)" }}
+                  transition={{ duration: 0.25 }}
+                >
+                  {/* Large faded number background */}
+                  <span
+                    className="absolute -right-1 -bottom-3 text-8xl font-black leading-none select-none pointer-events-none"
+                    style={{ color: "rgba(0,0,0,0.04)" }}
+                  >
                     {step.step}
+                  </span>
+
+                  {/* Icon square */}
+                  <motion.div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 relative z-10"
+                    style={{ background: "#e8533b" }}
+                    whileHover={{ scale: 1.08, rotate: 8 }}
+                    transition={{ type: "spring", stiffness: 280, damping: 18 }}
+                  >
+                    <step.icon className="w-7 h-7 text-white" />
+                  </motion.div>
+
+                  {/* Time pill */}
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/5 text-[11px] font-bold text-[#666] mb-3">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#e8533b]" />
+                    {step.time}
                   </div>
 
-                  {/* Icon */}
-                  <div className={`w-12 h-12 rounded-xl ${colors.bg} border ${colors.border} flex items-center justify-center mb-4`}>
-                    <step.icon className={`w-6 h-6 ${colors.text}`} />
-                  </div>
+                  <h3 className="text-lg font-black text-[#1a1a1a] mb-2 relative z-10">{step.title}</h3>
+                  <p className="text-sm text-[#666] leading-relaxed relative z-10">{step.description}</p>
+                </motion.div>
 
-                  {/* Content */}
-                  <h3 className="text-lg font-semibold text-white mb-2">{step.title}</h3>
-                  <p className="text-sm text-white/50 leading-relaxed">{step.description}</p>
-                </div>
-              </div>
-            );
-          })}
+                {/* Arrow connector between cards (desktop) */}
+                {i < steps.length - 1 && (
+                  <div className="hidden lg:flex absolute top-[52px] -right-3 z-20 w-6 items-center justify-center">
+                    <ArrowRight className="w-4 h-4 text-[#ccc]" />
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
     </section>

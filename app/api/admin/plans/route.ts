@@ -55,6 +55,8 @@ export async function POST(request: NextRequest) {
     is_active: body.is_active ?? true,
     is_featured: body.is_featured ?? false,
     sort_order: body.sort_order ?? 99,
+    razorpay_plan_id_monthly: body.razorpay_plan_id_monthly ?? null,
+    razorpay_plan_id_yearly: body.razorpay_plan_id_yearly ?? null,
   };
 
   const { data, error } = await db

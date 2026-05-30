@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Zap, Twitter, Linkedin, Youtube, Github, Mail, Phone, MapPin } from "lucide-react";
+import { viewportConfig, EASE } from "@/lib/animations";
 
 const footerLinks = {
   Product: [
@@ -42,90 +46,120 @@ const socials = [
 
 export default function Footer() {
   return (
-    <footer className="relative border-t border-white/5 bg-[#050810]">
-      {/* Top gradient line */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
-
+    <footer className="relative" style={{ background: "#f0f0f0", borderTop: "1px solid rgba(0,0,0,0.08)" }}>
       <div className="container-max px-4 sm:px-6 py-16">
         {/* Top section */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 mb-16">
+        <motion.div
+          className="grid grid-cols-1 lg:grid-cols-5 gap-12 mb-14"
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={viewportConfig}
+          transition={{ duration: 0.7, ease: EASE }}
+        >
           {/* Brand */}
           <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2.5 mb-4">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-purple-800 flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold">
-                <span className="gradient-text">Vorynto</span>
-                <span className="text-white"> AI</span>
-              </span>
-            </Link>
-            <p className="text-white/50 text-sm leading-relaxed mb-6 max-w-xs">
+            <motion.div whileHover={{ scale: 1.03 }} className="inline-block mb-4">
+              <Link href="/" className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#e8533b] flex items-center justify-center shadow-md shadow-[#e8533b]/25">
+                  <Zap className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-xl font-bold text-[#1a1a1a]">
+                  Vorynto<span className="text-[#e8533b]"> AI</span>
+                </span>
+              </Link>
+            </motion.div>
+            <p className="text-[#666] text-sm leading-relaxed mb-6 max-w-xs">
               The all-in-one AI agent platform for modern businesses. Automate,
               engage, and grow with the power of artificial intelligence.
             </p>
             <div className="space-y-2.5">
-              <div className="flex items-center gap-2 text-white/40 text-sm">
-                <Mail className="w-4 h-4 text-violet-400" />
-                <span>hello@vorynto.ai</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/40 text-sm">
-                <Phone className="w-4 h-4 text-violet-400" />
-                <span>+1 (888) VORYNTO</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/40 text-sm">
-                <MapPin className="w-4 h-4 text-violet-400" />
-                <span>San Francisco, CA, USA</span>
-              </div>
+              {[
+                { Icon: Mail, text: "hello@vorynto.ai" },
+                { Icon: Phone, text: "+1 (888) VORYNTO" },
+                { Icon: MapPin, text: "San Francisco, CA, USA" },
+              ].map(({ Icon, text }) => (
+                <motion.div
+                  key={text}
+                  className="flex items-center gap-2 text-[#888] text-sm"
+                  whileHover={{ x: 3, color: "#1a1a1a" }}
+                  transition={{ duration: 0.18 }}
+                >
+                  <Icon className="w-4 h-4 text-[#e8533b]" />
+                  <span>{text}</span>
+                </motion.div>
+              ))}
             </div>
-            <div className="flex items-center gap-3 mt-6">
+
+            {/* Socials */}
+            <div className="flex items-center gap-2.5 mt-6">
               {socials.map((s) => (
-                <a
+                <motion.a
                   key={s.label}
                   href={s.href}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={s.label}
-                  className="w-9 h-9 rounded-lg bg-white/5 hover:bg-violet-600/20 border border-white/5 hover:border-violet-500/30 flex items-center justify-center transition-all group"
+                  className="w-9 h-9 rounded-xl bg-white border border-black/8 flex items-center justify-center transition-colors hover:border-[#e8533b]/30 hover:bg-[#e8533b]/5"
+                  whileHover={{ scale: 1.12, y: -2 }}
+                  whileTap={{ scale: 0.92 }}
                 >
-                  <s.icon className="w-4 h-4 text-white/50 group-hover:text-violet-400 transition-colors" />
-                </a>
+                  <s.icon className="w-4 h-4 text-[#888] hover:text-[#e8533b]" />
+                </motion.a>
               ))}
             </div>
           </div>
 
           {/* Links */}
-          {Object.entries(footerLinks).map(([category, links]) => (
-            <div key={category}>
-              <h4 className="text-sm font-semibold text-white mb-4">{category}</h4>
+          {Object.entries(footerLinks).map(([category, links], ci) => (
+            <motion.div
+              key={category}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={viewportConfig}
+              transition={{ delay: ci * 0.08, duration: 0.55, ease: EASE }}
+            >
+              <h4 className="text-sm font-bold text-[#1a1a1a] mb-4">{category}</h4>
               <ul className="space-y-2.5">
                 {links.map((link) => (
                   <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-white/40 hover:text-white/80 transition-colors"
-                    >
-                      {link.label}
-                    </Link>
+                    <motion.div whileHover={{ x: 3 }} transition={{ duration: 0.18 }}>
+                      <Link
+                        href={link.href}
+                        className="text-sm text-[#888] hover:text-[#e8533b] transition-colors font-medium"
+                      >
+                        {link.label}
+                      </Link>
+                    </motion.div>
                   </li>
                 ))}
               </ul>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {/* Bottom bar */}
-        <div className="border-t border-white/5 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-white/30">
+        <motion.div
+          className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4"
+          style={{ borderTop: "1px solid rgba(0,0,0,0.08)" }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={viewportConfig}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <p className="text-sm text-[#aaa]">
             © 2025 Vorynto AI. All rights reserved.
           </p>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <motion.span
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold"
+              animate={{ opacity: [0.7, 1, 0.7] }}
+              transition={{ duration: 2.5, repeat: Infinity }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               All systems operational
-            </span>
+            </motion.span>
           </div>
-        </div>
+        </motion.div>
       </div>
     </footer>
   );

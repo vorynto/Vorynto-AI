@@ -643,6 +643,105 @@ export type Database = {
           },
         ]
       }
+      payment_orders: {
+        Row: {
+          amount: number
+          billing_cycle: string
+          captured_at: string | null
+          created_at: string | null
+          currency: string
+          error_description: string | null
+          id: string
+          notes: Json | null
+          plan_id: string | null
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
+          razorpay_signature: string | null
+          razorpay_subscription_id: string | null
+          status: string
+          subscription_id: string | null
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          billing_cycle?: string
+          captured_at?: string | null
+          created_at?: string | null
+          currency?: string
+          error_description?: string | null
+          id?: string
+          notes?: Json | null
+          plan_id?: string | null
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_signature?: string | null
+          razorpay_subscription_id?: string | null
+          status?: string
+          subscription_id?: string | null
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          billing_cycle?: string
+          captured_at?: string | null
+          created_at?: string | null
+          currency?: string
+          error_description?: string | null
+          id?: string
+          notes?: Json | null
+          plan_id?: string | null
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_signature?: string | null
+          razorpay_subscription_id?: string | null
+          status?: string
+          subscription_id?: string | null
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_orders_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_orders_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_settings: {
+        Row: {
+          description: string | null
+          key: string
+          updated_at: string | null
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          description?: string | null
+          key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value: string
+        }
+        Update: {
+          description?: string | null
+          key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       seo_projects: {
         Row: {
           audit_data: Json | null
@@ -706,6 +805,8 @@ export type Database = {
           name: string
           price_monthly: number
           price_yearly: number
+          razorpay_plan_id_monthly: string | null
+          razorpay_plan_id_yearly: string | null
           slug: string
           sort_order: number | null
           stripe_price_id_monthly: string | null
@@ -724,6 +825,8 @@ export type Database = {
           name: string
           price_monthly?: number
           price_yearly?: number
+          razorpay_plan_id_monthly?: string | null
+          razorpay_plan_id_yearly?: string | null
           slug: string
           sort_order?: number | null
           stripe_price_id_monthly?: string | null
@@ -742,6 +845,8 @@ export type Database = {
           name?: string
           price_monthly?: number
           price_yearly?: number
+          razorpay_plan_id_monthly?: string | null
+          razorpay_plan_id_yearly?: string | null
           slug?: string
           sort_order?: number | null
           stripe_price_id_monthly?: string | null
@@ -759,6 +864,8 @@ export type Database = {
           current_period_start: string | null
           id: string
           plan_id: string
+          razorpay_customer_id: string | null
+          razorpay_subscription_id: string | null
           status: Database["public"]["Enums"]["subscription_status"] | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -775,6 +882,8 @@ export type Database = {
           current_period_start?: string | null
           id?: string
           plan_id: string
+          razorpay_customer_id?: string | null
+          razorpay_subscription_id?: string | null
           status?: Database["public"]["Enums"]["subscription_status"] | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -791,6 +900,8 @@ export type Database = {
           current_period_start?: string | null
           id?: string
           plan_id?: string
+          razorpay_customer_id?: string | null
+          razorpay_subscription_id?: string | null
           status?: Database["public"]["Enums"]["subscription_status"] | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null

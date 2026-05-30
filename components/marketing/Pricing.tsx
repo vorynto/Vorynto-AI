@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { CheckCircle2, Zap, Star, ArrowRight } from "lucide-react";
+import { CheckCircle2, Zap, ArrowRight } from "lucide-react";
+import { viewportConfig, EASE } from "@/lib/animations";
 
 const plans = [
   {
@@ -10,7 +12,7 @@ const plans = [
     slug: "starter",
     price: { monthly: 49, yearly: 41 },
     description: "Perfect for small businesses getting started with AI automation",
-    color: "violet",
+    popular: false,
     features: [
       "AI CRM (500 contacts)",
       "WhatsApp AI Chatbot",
@@ -21,15 +23,13 @@ const plans = [
       "3 team members",
       "SSL & hosting included",
     ],
-    cta: "Start Free Trial",
-    popular: false,
   },
   {
     name: "Growth",
     slug: "growth",
     price: { monthly: 149, yearly: 124 },
     description: "Scale your business with advanced AI tools and integrations",
-    color: "cyan",
+    popular: true,
     features: [
       "AI CRM (5,000 contacts)",
       "WhatsApp AI Bot + Business API",
@@ -43,15 +43,13 @@ const plans = [
       "10 team members",
       "Custom domain",
     ],
-    cta: "Start Free Trial",
-    popular: true,
   },
   {
     name: "Enterprise",
     slug: "enterprise",
     price: { monthly: 399, yearly: 332 },
-    description: "Unlimited AI power for large organizations with custom requirements",
-    color: "amber",
+    description: "Unlimited AI power for large organizations with custom needs",
+    popular: false,
     features: [
       "Unlimited contacts",
       "All features included",
@@ -64,10 +62,8 @@ const plans = [
       "Dedicated account manager",
       "24/7 priority support",
       "SLA guarantee",
-      "On-premise deployment option",
+      "On-premise option",
     ],
-    cta: "Contact Sales",
-    popular: false,
   },
 ];
 
@@ -75,124 +71,181 @@ export default function Pricing() {
   const [yearly, setYearly] = useState(false);
 
   return (
-    <section id="pricing" className="section-padding relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-radial from-violet-900/10 to-transparent" />
-
-      <div className="container-max px-4 sm:px-6 relative">
+    <section id="pricing" className="py-24 overflow-hidden" style={{ background: "#ebebeb" }}>
+      <div className="container-max px-4 sm:px-6">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-violet-500/20 bg-violet-500/10 text-violet-300 text-sm mb-4">
-            <Star className="w-4 h-4" />
-            <span>Simple, transparent pricing</span>
+        <motion.div
+          className="text-center mb-12"
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={viewportConfig}
+          transition={{ duration: 0.75, ease: EASE }}
+        >
+          <div className="section-badge mb-5 inline-flex">
+            <span>●</span> Pricing Plans
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
-            Choose Your{" "}
-            <span className="gradient-text">Growth Plan</span>
+          <h2 className="text-4xl sm:text-5xl font-black text-[#1a1a1a] mb-4 leading-tight">
+            Simple, Transparent{" "}
+            <span className="gradient-text-coral">Pricing</span>
           </h2>
-          <p className="text-lg text-white/50 max-w-xl mx-auto mb-8">
-            Start for free. No credit card required. Upgrade when you are ready to scale.
+          <p className="text-lg text-[#666] max-w-xl mx-auto mb-8">
+            Start for free — no credit card required. Upgrade when you're ready to scale.
           </p>
 
-          {/* Billing toggle */}
-          <div className="inline-flex items-center gap-3 p-1 rounded-xl bg-white/5 border border-white/10">
+          {/* Toggle */}
+          <div className="inline-flex items-center gap-1 p-1 rounded-2xl bg-white border border-black/8 shadow-sm">
             <button
               onClick={() => setYearly(false)}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
-                !yearly ? "bg-violet-600 text-white shadow-lg" : "text-white/50 hover:text-white"
+              className={`relative px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
+                !yearly ? "text-white" : "text-[#666] hover:text-[#1a1a1a]"
               }`}
             >
-              Monthly
+              {!yearly && (
+                <motion.div
+                  layoutId="billing-pill"
+                  className="absolute inset-0 bg-[#1a1a1a] rounded-xl"
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                />
+              )}
+              <span className="relative">Monthly</span>
             </button>
             <button
               onClick={() => setYearly(true)}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                yearly ? "bg-violet-600 text-white shadow-lg" : "text-white/50 hover:text-white"
+              className={`relative px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 ${
+                yearly ? "text-white" : "text-[#666] hover:text-[#1a1a1a]"
               }`}
             >
-              Yearly
-              <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">
+              {yearly && (
+                <motion.div
+                  layoutId="billing-pill"
+                  className="absolute inset-0 bg-[#1a1a1a] rounded-xl"
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                />
+              )}
+              <span className="relative">Yearly</span>
+              <span className="relative text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "#dcfce7", color: "#15803d" }}>
                 Save 17%
               </span>
             </button>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Plans grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {plans.map((plan) => (
-            <div
+        {/* Plans */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
+          {plans.map((plan, i) => (
+            <motion.div
               key={plan.name}
-              className={`relative glass-card p-7 flex flex-col ${
+              className={`relative flex flex-col rounded-3xl overflow-hidden ${
                 plan.popular
-                  ? "border-violet-500/40 bg-gradient-to-b from-violet-600/10 to-transparent shadow-2xl shadow-violet-500/10"
-                  : "border-white/8"
+                  ? "shadow-2xl shadow-[#e8533b]/15"
+                  : "light-card"
               }`}
+              style={plan.popular ? {
+                background: "#1a1a1a",
+                border: "none",
+              } : {}}
+              initial={{ opacity: 0, y: 36 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={viewportConfig}
+              transition={{ duration: 0.6, delay: i * 0.1, ease: EASE }}
+              whileHover={{ y: -6, transition: { duration: 0.22 } }}
             >
               {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 text-white text-xs font-semibold shadow-lg shadow-violet-500/30">
-                    <Zap className="w-3.5 h-3.5" />
-                    Most Popular
-                  </div>
-                </div>
+                <div className="absolute top-0 left-0 right-0 h-1 rounded-t-3xl" style={{ background: "#e8533b" }} />
               )}
 
-              <div className="mb-6">
-                <h3 className="text-xl font-bold text-white mb-1">{plan.name}</h3>
-                <p className="text-sm text-white/40">{plan.description}</p>
-              </div>
-
-              <div className="mb-6">
-                <div className="flex items-end gap-2">
-                  <span className="text-5xl font-bold text-white">
-                    ${yearly ? plan.price.yearly : plan.price.monthly}
-                  </span>
-                  <span className="text-white/40 mb-2">/month</span>
-                </div>
-                {yearly && (
-                  <p className="text-xs text-emerald-400 mt-1">
-                    Billed yearly — save ${(plan.price.monthly - plan.price.yearly) * 12}/year
-                  </p>
+              <div className="p-7 flex flex-col flex-1">
+                {/* Popular badge */}
+                {plan.popular && (
+                  <motion.div
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold mb-4 self-start"
+                    style={{ background: "rgba(232,83,59,0.15)", color: "#e8533b" }}
+                    animate={{ scale: [1, 1.03, 1] }}
+                    transition={{ duration: 2.5, repeat: Infinity }}
+                  >
+                    <Zap className="w-3 h-3" /> Most Popular
+                  </motion.div>
                 )}
+
+                <h3 className={`text-xl font-black mb-1 ${plan.popular ? "text-white" : "text-[#1a1a1a]"}`}>
+                  {plan.name}
+                </h3>
+                <p className={`text-sm mb-6 ${plan.popular ? "text-white/50" : "text-[#888]"}`}>
+                  {plan.description}
+                </p>
+
+                {/* Price */}
+                <div className="mb-6">
+                  <div className="flex items-end gap-1.5">
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={yearly ? "y" : "m"}
+                        className={`text-5xl font-black ${plan.popular ? "text-white" : "text-[#1a1a1a]"}`}
+                        initial={{ opacity: 0, y: -16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 16 }}
+                        transition={{ duration: 0.22 }}
+                      >
+                        ${yearly ? plan.price.yearly : plan.price.monthly}
+                      </motion.span>
+                    </AnimatePresence>
+                    <span className={`mb-2 font-medium ${plan.popular ? "text-white/40" : "text-[#bbb]"}`}>/mo</span>
+                  </div>
+                  {yearly && (
+                    <motion.p
+                      className="text-xs font-semibold text-emerald-500 mt-1"
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      Save ${(plan.price.monthly - plan.price.yearly) * 12}/year
+                    </motion.p>
+                  )}
+                </div>
+
+                {/* Features */}
+                <ul className="space-y-2.5 mb-8 flex-1">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2.5 text-sm">
+                      <CheckCircle2
+                        className={`w-4 h-4 shrink-0 mt-0.5 ${plan.popular ? "text-[#e8533b]" : "text-emerald-500"}`}
+                      />
+                      <span className={plan.popular ? "text-white/75" : "text-[#555]"}>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* CTA */}
+                <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                  <Link
+                    href={plan.slug === "enterprise" ? "/contact" : `/signup?plan=${plan.slug}`}
+                    className={`w-full text-center py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                      plan.popular
+                        ? "bg-[#e8533b] text-white hover:bg-[#d44730] shadow-lg shadow-[#e8533b]/30"
+                        : "bg-[#1a1a1a] text-white hover:bg-[#2d2d2d]"
+                    }`}
+                  >
+                    {plan.slug === "enterprise" ? "Contact Sales" : "Start Free Trial"}
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </motion.div>
               </div>
-
-              <ul className="space-y-2.5 mb-8 flex-1">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2.5 text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span className="text-white/70">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href={plan.slug === "enterprise" ? "/contact" : "/signup?plan=" + plan.slug}
-                className={`w-full text-center py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
-                  plan.popular
-                    ? "btn-primary"
-                    : "btn-secondary"
-                }`}
-              >
-                {plan.cta}
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
+            </motion.div>
           ))}
         </div>
 
-        {/* Enterprise note */}
-        <div className="text-center mt-10">
-          <p className="text-sm text-white/40">
-            All plans include 14-day free trial · No setup fees · Cancel anytime
-          </p>
-          <p className="text-sm text-white/30 mt-2">
-            Need a custom plan?{" "}
-            <Link href="/contact" className="text-violet-400 hover:text-violet-300">
-              Talk to our team
-            </Link>
-          </p>
-        </div>
+        {/* Footer note */}
+        <motion.p
+          className="text-center text-sm text-[#999] mt-8"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={viewportConfig}
+          transition={{ delay: 0.4 }}
+        >
+          All plans include a 14-day free trial · No setup fees · Cancel anytime ·{" "}
+          <Link href="/contact" className="text-[#e8533b] hover:underline font-medium">
+            Need custom pricing?
+          </Link>
+        </motion.p>
       </div>
     </section>
   );

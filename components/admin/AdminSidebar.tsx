@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, Building2, CreditCard,
   FileText, Settings, Zap, Shield, LogOut, Headphones,
-  ChevronRight,
+  ChevronRight, IndianRupee,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -14,6 +14,7 @@ const navItems = [
   { label: "Clients", href: "/admin/tenants", icon: Building2 },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Subscription Plans", href: "/admin/plans", icon: CreditCard },
+  { label: "Billing & Payments", href: "/admin/billing", icon: IndianRupee },
   { label: "CMS Content", href: "/admin/content", icon: FileText },
   { label: "Support Tickets", href: "/admin/support", icon: Headphones },
   { label: "Admin Settings", href: "/admin/settings", icon: Settings },
